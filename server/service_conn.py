@@ -57,22 +57,29 @@ def service_connection(sel, key, mask):
             # sent = write_socket(sock, return_data)
             # print(f"Sending {return_data} to {data.addr}")
             # data.outb = b''     # TODO: This is a hack to get it to work for now. This may be problematic if not all of the message is sent at once.
+            
+            match decoded_data["command"]:
+                case "send_chat":
+                    return_msg = decoded_data["message"] + " TESTTTT"
 
-            if decoded_data["command"] == "send_chat":
-                return_msg = decoded_data["message"] + " TESTTTT"
+                    return_data = {"message": return_msg}
 
-                return_data = {"message": return_msg}
+                    sent = write_socket(sock, return_data)
+                    print(f"Sending {return_data} to {data.addr}")
+                    data.outb = b''     # TODO: This is a hack to get it to work for now. This may be problematic if not all of the message is sent at once.
+                    
+                case "signup":
+                    return_data = {"message": "signup not implemented"}
+                    sent = write_socket(sock, return_data)
+                    print(f"Sending {return_data} to {data.addr}")
+                    data.outb = b''     # TODO: This is a hack to get it to work for now. This may be problematic if not all of the message is sent at once.
 
-                sent = write_socket(sock, return_data)
-                print(f"Sending {return_data} to {data.addr}")
-                data.outb = b''     # TODO: This is a hack to get it to work for now. This may be problematic if not all of the message is sent at once.
+                case _:
+                    unrecognized_command_message = "Unrecognized command. Please try again!"
 
+                    return_data = {"message": unrecognized_command_message}
 
-            elif decoded_data["command"] == "signup":
-                return_data = {"message": "signup not implemented"}
-                sent = write_socket(sock, return_data)
-                print(f"Sending {return_data} to {data.addr}")
-                data.outb = b''     # TODO: This is a hack to get it to work for now. This may be problematic if not all of the message is sent at once.
-
-
-
+                    sent = write_socket(sock, return_data)
+                    print(f"Sending {return_data} to {data.addr}")
+                    data.outb = b''
+           
