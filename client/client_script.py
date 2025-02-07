@@ -18,9 +18,22 @@ if __name__ == "__main__":
     
     try:
         while True:
-            msg = input("Enter message to send: ")
-            # msg_data = {"message": msg, "command": "send_chat"}
-            msg_data = {"message": msg, "command": "signup"}
+            
+            # Steve Attempt
+            command = input("Enter command (signup, login, send_chat): ")
+            if command == "signup" or command == "login":
+                username = input("Enter username: ")
+                password = input("Enter password: ")
+                msg_data = {"command": command, "username": username, "password": password}
+            else: 
+                msg = input("Enter message to send: ")
+                msg_data = {"command": command, "message": msg}
+
+
+
+            # msg = input("Enter message to send: ")
+            # # msg_data = {"message": msg, "command": "send_chat"}
+            # msg_data = {"message": msg, "command": "signup"}
 
             sent = write_socket(client_sock, msg_data) 
             data = read_socket(client_sock)
