@@ -6,6 +6,7 @@ import selectors
 import sys
 sys.path.append('../')
 from helpers.socket_io import read_socket, write_socket
+from account_management import create_account, login
 
 def service_connection(sel, key, mask):
     sock = key.fileobj
@@ -61,18 +62,29 @@ def service_connection(sel, key, mask):
             match decoded_data["command"]:
                 case "send_chat":
                     return_msg = decoded_data["message"] + " TESTTTT"
-
                     return_data = {"message": return_msg}
-
                     sent = write_socket(sock, return_data)
                     print(f"Sending {return_data} to {data.addr}")
                     data.outb = b''     # TODO: This is a hack to get it to work for now. This may be problematic if not all of the message is sent at once.
                     
                 case "signup":
-                    return_data = {"message": "signup not implemented"}
+#                     return_data = {"message": "signup not implemented"}
+#                     sent = write_socket(sock, return_data)
+#                     print(f"Sending {return_data} to {data.addr}")
+#                     data.outb = b''     # TODO: This is a hack to get it to work for now. This may be problematic if not all of the message is sent at once.
+                      return_msg = decoded_data["message"] + " TESTTTT"
+                    return_data = {"message": return_msg}
                     sent = write_socket(sock, return_data)
                     print(f"Sending {return_data} to {data.addr}")
                     data.outb = b''     # TODO: This is a hack to get it to work for now. This may be problematic if not all of the message is sent at once.
+
+                case "login":
+                    username = decoded_data["username"]
+                    password = decoded_data["password"]
+                    return_data = login(username, password)
+                    sent = write_socket(sock, return_data)
+                    print(f"Sending {return_data} to {data.addr}")
+                    data.outb = b''
 
                 case _:
                     unrecognized_command_message = "Unrecognized command. Please try again!"
