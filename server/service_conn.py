@@ -1,5 +1,6 @@
 # def service_connection():
 #   pass
+import json
 import selectors
 
 import sys
@@ -34,6 +35,7 @@ def service_connection(sel, key, mask):
             sock.close()
         else:
             data.outb += recv_data
+
     if mask & selectors.EVENT_WRITE:
         if data.outb:
             # ADD FUNCTIONALITY FOR OPERATIONS HERE 
@@ -45,9 +47,32 @@ def service_connection(sel, key, mask):
             #     data.outb = data.outb[sent:]
             
             
-            return_data = data.outb.decode("utf-8") + " TESTTTT"
-            sent = write_socket(sock, return_data)
-            print(f"Sending {return_data} to {data.addr}")
-            # return_data = return_data.encode("utf-8")
-            # sent = sock.send(return_data)
-            data.outb = data.outb[sent:]
+            decoded_data = data.outb.decode("utf-8").strip()
+            print("raw data:", data.outb, "decoded_data:", decoded_data)
+            decoded_data = json.loads(decoded_data)
+            # return_msg = decoded_data["message"] + " TESTTTT"
+
+            # return_data = {"message": return_msg}
+
+            # sent = write_socket(sock, return_data)
+            # print(f"Sending {return_data} to {data.addr}")
+            # data.outb = b''     # TODO: This is a hack to get it to work for now. This may be problematic if not all of the message is sent at once.
+
+            if decoded_data["command"] == "send_chat":
+                return_msg = decoded_data["message"] + " TESTTTT"
+
+                return_data = {"message": return_msg}
+
+                sent = write_socket(sock, return_data)
+                print(f"Sending {return_data} to {data.addr}")
+                data.outb = b''     # TODO: This is a hack to get it to work for now. This may be problematic if not all of the message is sent at once.
+
+
+            elif decoded_data["command"] == "signup":
+                return_data = {"message": "signup not implemented"}
+                sent = write_socket(sock, return_data)
+                print(f"Sending {return_data} to {data.addr}")
+                data.outb = b''     # TODO: This is a hack to get it to work for now. This may be problematic if not all of the message is sent at once.
+
+
+
