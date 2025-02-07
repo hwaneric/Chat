@@ -1,3 +1,4 @@
+import json
 import socket 
 from dotenv import load_dotenv
 import os
@@ -17,27 +18,20 @@ if __name__ == "__main__":
     
     try:
         while True:
-            # message = input("Enter message to send: ")
-            # client_sock.send(message.encode('utf-8'))
+            msg = input("Enter message to send: ")
+            # msg_data = {"message": msg, "command": "send_chat"}
+            msg_data = {"message": msg, "command": "signup"}
 
-            message = input("Enter message to send: ")
-            sent = write_socket(client_sock, message)
-            # message_length = len(message)
-            # message_length_bytes = message_length.to_bytes(4, byteorder='big')
-            # full_message = message_length_bytes + message.encode('utf-8')
-            # client_sock.send(full_message)
+            sent = write_socket(client_sock, msg_data) 
             data = read_socket(client_sock)
-            # data = b''
-            # while True:
-            #     part = client_sock.recv(1024)
-            #     data += part
-            #     if len(part) < 1024:
-            #         break
+              
             if not data:
                 print("Connection closed by server")
                 break
             else:
-                print('Received from server:', data.decode('utf-8'))
+                data = data.decode("utf-8")
+                data = json.loads(data)
+                print('Received from server:', data["message"])
       
     except KeyboardInterrupt:
         print("Caught keyboard interrupt, exiting")
