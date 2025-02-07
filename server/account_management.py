@@ -1,5 +1,6 @@
 import json 
 import os 
+import re
 
 USER_DATA_FILE = "user_data.json"
 
@@ -13,12 +14,17 @@ def save_user_data(users):
     with open(USER_DATA_FILE, "w") as f:
         json.dump(users, f)
 
-existing_users = load_user_data()
 
 def username_exists(username):
+    existing_users = load_user_data()
+
     return username in existing_users
 
 def create_account(username, password): 
+    existing_users = load_user_data()
+
+    if not username or not password:
+        return {"success": False, "message": "Username and/or password cannot be empty."}
     if username_exists(username):
         return {"success": False, "message": "Username already exists. Please try again."}
     else:
@@ -27,7 +33,16 @@ def create_account(username, password):
         return {"success": True, "message": "Account created successfully."}
 
 def login(username, password):
-    if username_exists(username) and existing_users[username] == password:
-        return {"success": True, "message": "Login successful."}
-    else:
-        return {"success": False, "message": "Incorrect username or password. Please try again."}
+    existing_users = load_user_data()
+
+    if username_exists(username):
+        user = existing_users[username]
+        if user["password"] == password:
+            return {"success": True, "message": "Login successful."}
+      
+    return {"success": False, "message": "Incorrect username or password. Please try again."}
+
+def list_accounts(username_pattern):
+    existing_users = load_user_data()
+    matching_users = [username for username in existing_users.keys() if re.search(username_pattern, username)]
+    return {"success": True, "message": "Accounts listed successfully.", "matches": matching_users}

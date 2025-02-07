@@ -4,7 +4,7 @@ sys.path.append('../')
 from helpers.socket_io import read_socket, write_socket
 
 def attempt_signup(client_sock, username, password):
-    msg_data = {"username": username, "password": password, "command": "signup"}
+    msg_data = {"command": "signup", "username": username, "password": password}
 
     sent = write_socket(client_sock, msg_data)
     data = read_socket(client_sock)
@@ -14,7 +14,7 @@ def attempt_signup(client_sock, username, password):
 
     data = data.decode("utf-8")
     data = json.loads(data)
-    return {"success": False, "message": data["message"]}   # TODO: Make this actually correspond to what server responded
+    return {"success": data["success"], "message": data["message"]}   # TODO: Make this actually correspond to what server responded
   
 def attempt_login(client_sock, username, password):
     msg_data = {"command": "login", "username": username, "password": password}
@@ -27,5 +27,5 @@ def attempt_login(client_sock, username, password):
 
     data = data.decode("utf-8")
     data = json.loads(data)
-    return {"success": False, "message": data["message"]}   # TODO: Make this actually correspond to what server responded
-  
+    return {"success":  data["success"], "message": data["message"]}   # TODO: Make this actually correspond to what server responded
+
