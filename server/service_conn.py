@@ -6,7 +6,7 @@ import selectors
 import sys
 sys.path.append('../')
 from helpers.socket_io import read_socket, write_socket
-from account_management import create_account, list_accounts, login
+from account_management import check_if_online, create_account, list_accounts, login, logout, send_offline_message
 
 def service_connection(sel, key, mask):
     sock = key.fileobj
@@ -51,6 +51,13 @@ def service_connection(sel, key, mask):
                     sent = write_socket(sock, return_data)
                     print(f"Sending {return_data} to {data.addr}")
                     data.outb = b''
+                
+                case "logout":
+                    username = decoded_data["username"]
+                    return_data = logout(username)
+                    sent = write_socket(sock, return_data)
+                    print(f"Sending {return_data} to {data.addr}")
+                    data.outb = b''
 
                 case "list":
                     username_pattern = decoded_data["username_pattern"]
@@ -58,6 +65,21 @@ def service_connection(sel, key, mask):
                     sent = write_socket(sock, return_data)
                     print(f"Sending {return_data} to {data.addr}")
                     data.outb = b''
+
+                case "message":
+                    target_username = decoded_data["target_username"]
+                    message = decoded_data["message"]
+                    timestamp = int(decoded_data["timestamp"])  # Seconds since epoch
+
+                    message = decoded_data["message"]
+                    return_data = send_offline_message(target_username, message, timestamp)
+                    
+                    sent = write_socket(sock, return_data)
+                    print(f"Sending {return_data} to {data.addr}")
+                    data.outb = b''
+
+
+
 
                 case _:
                     unrecognized_command_message = "Unrecognized command. Please try again!"

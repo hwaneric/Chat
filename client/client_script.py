@@ -1,6 +1,6 @@
 import json
+import time
 import socket 
-import curses
 from dotenv import load_dotenv
 import os
 import readline # Need to import readline to allow inputs to accept string with length > 1048
@@ -80,6 +80,60 @@ class Client:
         except Exception as e:
             print(f"Error listing accounts: {e}") 
 
+    def message(self):
+        try:
+            print("Selected: Message")
+            target_username = input("Enter username to message: ")
+            message = input("Enter message: ")
+
+            msg_data = {
+                "command": "message", 
+                "target_username": target_username, 
+                "message": message,
+                "timestamp": int(time.time())
+            } 
+
+            sent = write_socket(self.sock, msg_data)
+            data = read_socket(self.sock)
+
+            if not data:
+                print("Server side error while attempting to send message. Please try again!")
+                return
+
+            data = data.decode("utf-8")
+            data = json.loads(data)
+            if data["success"]:
+                print(f"Message sent successfully to {target_username}")
+            else:
+                print(f"Failed to send message: {data["message"]}")
+        except Exception as e:
+            print(f"Error sending message: {e}")
+    
+    def logout(self):
+        try:
+            print("Logging Out...")
+            if not self.username:
+                print("You are not logged in! Logout unsuccessful")
+                return
+            
+            msg_data = {"command": "logout", "username": self.username}
+            sent = write_socket(self.sock, msg_data)
+            data = read_socket(self.sock)
+
+            if not data:
+                print("Server side error while attempting to logout. Please try again!")
+                return
+
+            data = data.decode("utf-8")
+            data = json.loads(data)
+            if data["success"]:
+                print(f"Successfully logged out of {self.username}")
+                self.username = None
+            else:
+                print(f"Failed to logout: {data["message"]}")
+        except Exception as e:
+            print(f"Error logging out: {e}")
+
 if __name__ == "__main__":
     client = Client(HOST, PORT)
     try:
@@ -108,7 +162,7 @@ if __name__ == "__main__":
         
         # Login successful, proceeding to chat
         while True:
-            commands = ["\list"]
+            commands = ["\list", "\message", "\logout"]
             print(f"Welcome {client.username}! Please choose a command:")
             for command in commands:
                 print(command)
@@ -117,6 +171,10 @@ if __name__ == "__main__":
             match command:
                 case "\list":
                     client.list()
+                case "\message":
+                    client.message()
+                case "\logout":
+                    client.logout()
                 case _:
                     print("Invalid command. Please try again")
             # msg = input("Enter message to send: ")
@@ -137,6 +195,9 @@ if __name__ == "__main__":
     except KeyboardInterrupt:
         print("Caught keyboard interrupt, exiting")
     finally:
+        if client.username:
+            client.logout()
+
         client.sock.close()
 
         
