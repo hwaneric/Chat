@@ -1,4 +1,6 @@
 import json
+import selectors
+import threading
 import time
 import socket 
 from dotenv import load_dotenv
@@ -20,6 +22,7 @@ class Client:
         self.port = port
         self.sock = None
         self.username = username
+        self.sel = selectors.DefaultSelector()
     
     def signup(self):
         print("Selected: Signup")
@@ -133,6 +136,35 @@ class Client:
                 print(f"Failed to logout: {data["message"]}")
         except Exception as e:
             print(f"Error logging out: {e}")
+    
+    def listen_for_messages(self):
+        print("Listening for messages...")
+        while True:
+            events = self.sel.select(timeout=None)
+            for key, mask in events:
+                if key.data is None:
+                    print("ERROR: No data found in selector. Please investigate further")
+                    continue
+                
+                
+                if mask & selectors.EVENT_READ:
+                    recv_data = read_socket(self.sock)
+                    if not recv_data:
+                        print("ERROR: Server side error while attempting to listen for messages. Please investigate further!")
+                        continue
+                    else:
+                        data = recv_data.decode("utf-8")
+                        data = json.loads(data)
+                        print(f"New message from {data["sender"]}: {data["message"]}")
+
+            data = read_socket(self.sock)
+            if not data:
+                print("Server side error while attempting to listen for messages. Please try again!")
+                return
+
+            data = data.decode("utf-8")
+            data = json.loads(data)
+            print(f"New message from {data["sender"]}: {data["message"]}")
 
 if __name__ == "__main__":
     client = Client(HOST, PORT)
@@ -141,10 +173,17 @@ if __name__ == "__main__":
         client_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         client_sock.connect((HOST, PORT))
         client.sock = client_sock
+
+        client.sel.register(client.sock, selectors.EVENT_READ, data=None)
+
     except Exception as e:
         print("Error connecting to server:", e)
         sys.exit(1)
     
+    # Start background thread to listen for messages
+    messages_thread = threading.Thread(target=client.listen_for_messages, daemon=True)
+    messages_thread.start()
+
     try:
 
         while client.username is None:
@@ -177,21 +216,7 @@ if __name__ == "__main__":
                     client.logout()
                 case _:
                     print("Invalid command. Please try again")
-            # msg = input("Enter message to send: ")
-            # msg_data = {"message": msg, "command": "send_chat"}
-            # # msg_data = {"message": msg, "command": "signup"}
-
-            # sent = write_socket(client.sock, msg_data) 
-            # data = read_socket(client.sock)
             
-            # if not data:
-            #     print("Connection closed by server, exiting")
-            #     break
-            # else:
-            #     data = data.decode("utf-8")
-            #     data = json.loads(data)
-            #     print('Received from server:', data["message"])
-      
     except KeyboardInterrupt:
         print("Caught keyboard interrupt, exiting")
     finally:

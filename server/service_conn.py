@@ -43,7 +43,7 @@ def service_connection(sel, key, mask):
                     sent = write_socket(sock, return_data)
                     print(f"Sending {return_data} to {data.addr}")
                     data.outb = b''
-#                   
+                   
                 case "login":
                     username = decoded_data["username"]
                     password = decoded_data["password"]
@@ -77,9 +77,6 @@ def service_connection(sel, key, mask):
                     sent = write_socket(sock, return_data)
                     print(f"Sending {return_data} to {data.addr}")
                     data.outb = b''
-
-
-
 
                 case _:
                     unrecognized_command_message = "Unrecognized command. Please try again!"
