@@ -1,6 +1,10 @@
+import datetime
 import json
-import socket 
-import curses
+import selectors
+import threading
+import time
+import socket
+import types 
 from dotenv import load_dotenv
 import os
 import readline # Need to import readline to allow inputs to accept string with length > 1048
@@ -20,6 +24,8 @@ class Client:
         self.port = port
         self.sock = None
         self.username = username
+        self.sel = selectors.DefaultSelector()
+        self.lsock = None
     
     def signup(self):
         print("Selected: Signup")
@@ -80,6 +86,157 @@ class Client:
         except Exception as e:
             print(f"Error listing accounts: {e}") 
 
+    def message(self):
+        try:
+            print("Selected: Message")
+            target_username = input("Enter username to message: ")
+            message = input("Enter message: ")
+
+            msg_data = {
+                "command": "message", 
+                "sender_username": self.username,
+                "target_username": target_username, 
+                "message": message,
+                "timestamp": int(time.time())
+            } 
+
+            sent = write_socket(self.sock, msg_data)
+            data = read_socket(self.sock)
+
+            if not data:
+                print("Server side error while attempting to send message. Please try again!")
+                return
+
+            data = data.decode("utf-8")
+            data = json.loads(data)
+            if data["success"]:
+                print(f"Message sent successfully to {target_username}")
+            else:
+                print(f"Failed to send message: {data["message"]}")
+        except Exception as e:
+            print(f"Error sending message: {e}")
+    
+    def logout(self):
+        try:
+            print("Logging Out...")
+            if not self.username:
+                print("You are not logged in! Logout unsuccessful")
+                return
+            
+            msg_data = {"command": "logout", "username": self.username}
+            sent = write_socket(self.sock, msg_data)
+            data = read_socket(self.sock)
+
+            if not data:
+                print("Server side error while attempting to logout. Please try again!")
+                return
+
+            data = data.decode("utf-8")
+            data = json.loads(data)
+            if data["success"]:
+                print(f"Successfully logged out of {self.username}")
+                self.username = None
+            else:
+                print(f"Failed to logout: {data["message"]}")
+        except Exception as e:
+            print(f"Error logging out: {e}")
+    
+    def read(self):
+        try:
+            print("Selected: Read")
+            num_messages = input("Enter number of messages to read: ")
+
+            msg_data = {"command": "read", "username": self.username, "num_messages": num_messages}
+            sent = write_socket(self.sock, msg_data)
+            data = read_socket(self.sock)
+
+            if not data:
+                print("Server side error while attempting to read messages. Please try again!")
+                return
+
+            data = data.decode("utf-8")
+            data = json.loads(data)
+            if data["success"]:
+                for message in data["messages"]:
+                    dt = datetime.datetime.fromtimestamp(message["timestamp"])
+                    readable_time = dt.strftime("%m-%d-%Y, %I:%M %p")
+
+                    print(f"{message["sender"]} at {readable_time}:")
+                    print(f"{message["message"]}")
+                print("\n")
+            else:
+                print(f"Failed to read messages: {data["message"]}")
+        except Exception as e:
+            print(f"Error reading messages: {e}")
+    
+    def _register_lsock(self):
+        '''
+            Register socket to listen for messages from the server that must be
+            delivered immediately. 
+        '''
+        self.lsock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.lsock.bind((self.host, 0))
+        self.lsock.listen()
+        print(f"Listening for messages on {self.lsock.getsockname()}")
+        self.lsock.setblocking(False)
+        self.sel.register(self.lsock, selectors.EVENT_READ, data=None)
+
+        # Register listening socket with server
+        msg_data = {
+            "command": "register", 
+            "username": self.username, 
+            "host": self.host, 
+            "port": self.lsock.getsockname()[1]
+        }
+        sent = write_socket(self.sock, msg_data)
+        data = read_socket(self.sock)
+
+        if not data:
+            print(f"Server side error while attempting to register listening socket for messages. Please try again!")
+        
+        data = data.decode("utf-8")
+        data = json.loads(data)
+
+        if not data["success"]:
+            print(f"Failed to register for messages: {data["message"]}")
+            sys.exit(1)
+        print("Successfully registered for online messages on server")
+
+    
+    def listen_for_messages(self):
+        self._register_lsock()
+
+        while True:
+            events = self.sel.select(timeout=None)
+            for key, mask in events:
+                sock = key.fileobj
+
+                # Accept connection from server
+                if key.data is None:
+                    conn, addr = self.lsock.accept()
+                    print(f"Accepted connection from {addr}")
+                    conn.setblocking(False)
+                    data = types.SimpleNamespace(addr=addr, inb=b"", outb=b"")
+                    events = selectors.EVENT_READ | selectors.EVENT_WRITE
+                    self.sel.register(conn, events, data=data)
+                    continue
+                
+                # Receive message from server 
+                if mask & selectors.EVENT_READ:
+                    recv_data = read_socket(sock)
+
+                    # Server closed connection
+                    if not recv_data:
+                        print(f"REMOVE THIS PRINT LATER: Closing connection to {sock.getpeername()}")
+                        self.sel.unregister(sock)
+                        sock.close()
+
+                    # Server sent message                    
+                    else:
+                        data = recv_data.decode("utf-8")
+                        data = json.loads(data)
+                        print(f"\nNew message from {data["sender"]}: {data["message"]}")
+
 if __name__ == "__main__":
     client = Client(HOST, PORT)
     try:
@@ -87,12 +244,13 @@ if __name__ == "__main__":
         client_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         client_sock.connect((HOST, PORT))
         client.sock = client_sock
+
     except Exception as e:
         print("Error connecting to server:", e)
         sys.exit(1)
     
-    try:
 
+    try:
         while client.username is None:
             print("Welcome! To login, type '\login'. To signup, type '\signup'")
             command = input("Enter command: ")
@@ -106,37 +264,38 @@ if __name__ == "__main__":
                     print("Invalid command. Please try again")
             print("\n")
         
+        # Start background thread to listen for messages
+        messages_thread = threading.Thread(target=client.listen_for_messages, daemon=True)
+        messages_thread.start()
+
         # Login successful, proceeding to chat
         while True:
-            commands = ["\list"]
+            commands = ["\list", "\message", "\logout", "\\read"]
             print(f"Welcome {client.username}! Please choose a command:")
             for command in commands:
                 print(command)
 
             command = input("Enter command: ")
+
             match command:
                 case "\list":
                     client.list()
+                case "\message":
+                    client.message()
+                case "\logout":
+                    client.logout()
+                    break
+                case "\\read":
+                    client.read()
                 case _:
                     print("Invalid command. Please try again")
-            # msg = input("Enter message to send: ")
-            # msg_data = {"message": msg, "command": "send_chat"}
-            # # msg_data = {"message": msg, "command": "signup"}
-
-            # sent = write_socket(client.sock, msg_data) 
-            # data = read_socket(client.sock)
             
-            # if not data:
-            #     print("Connection closed by server, exiting")
-            #     break
-            # else:
-            #     data = data.decode("utf-8")
-            #     data = json.loads(data)
-            #     print('Received from server:', data["message"])
-      
     except KeyboardInterrupt:
         print("Caught keyboard interrupt, exiting")
     finally:
+        if client.username:
+            client.logout()
+
         client.sock.close()
 
         
