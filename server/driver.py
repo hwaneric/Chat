@@ -2,6 +2,7 @@ import socket
 import selectors
 import types
 from accept_wrapper import accept_wrapper
+from account_management import logout_all_users
 from service_conn import service_connection
 from dotenv import load_dotenv
 import os
@@ -30,4 +31,6 @@ if __name__ == "__main__":
     except KeyboardInterrupt:
         print("Caught keyboard interrupt, exiting")
     finally:
+        logout_all_users()
         sel.close()
+

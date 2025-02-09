@@ -21,7 +21,7 @@ def username_exists(username):
 
     return username in existing_users
 
-def create_account(username, password): 
+def create_account(username, password, host, port): 
     existing_users = load_user_data()
 
     if not username or not password:
@@ -29,7 +29,14 @@ def create_account(username, password):
     if username_exists(username):
         return {"success": False, "message": "Username already exists. Please try again."}
     
-    existing_users[username] = {"username": username, "password": password, "online": True}
+    existing_users[username] = {
+        "username": username, 
+        "password": password, 
+        "online": True, 
+        "host": host, 
+        "port": port
+    }
+
     save_user_data(existing_users)
 
     db_pathname = get_db_pathname()
@@ -38,13 +45,19 @@ def create_account(username, password):
         json.dump([], user_file)
     return {"success": True, "message": "Account created successfully."}
 
-def login(username, password):
+def login(username, password, host, port):
     existing_users = load_user_data()
 
+    is_online = check_if_online(username)
+    if is_online:
+        return {"success": False, "message": "User is already logged in."}
+        
     if username_exists(username):
         user = existing_users[username]
         if user["password"] == password:
             user["online"] = True
+            user["host"] = host
+            user["port"] = port
             save_user_data(existing_users)
             return {"success": True, "message": "Login successful."}
       
@@ -56,6 +69,8 @@ def logout(username):
     if username_exists(username):
         user = existing_users[username]
         user["online"] = False
+        user["host"] = ""
+        user["port"] = ""
         save_user_data(existing_users)
         return {"success": True, "message": "Logout successful."}
       
@@ -66,7 +81,7 @@ def list_accounts(username_pattern):
     matching_users = [username for username in existing_users.keys() if re.search(username_pattern, username)]
     return {"success": True, "message": "Accounts listed successfully.", "matches": matching_users}
 
-def send_offline_message(target_username, message, timestamp):
+def send_offline_message(target_username, sender_username, message, timestamp):
     start = time.time()
     existing_users = load_user_data()
     db_pathname = get_db_pathname()
@@ -76,7 +91,7 @@ def send_offline_message(target_username, message, timestamp):
     if not os.path.exists(target_db_pathname):
         return {"success": False, "message": "Target user does not exist."}
 
-    new_message = {"message": message, "timestamp": timestamp}
+    new_message = {"message": message, "sender": sender_username, "timestamp": timestamp}
     with open(target_db_pathname, "r") as f:
         unread_messages = json.load(f)
     
@@ -96,17 +111,48 @@ def send_offline_message(target_username, message, timestamp):
     print(f"Time to send offline message: {end - start} seconds")
     return {"success": True, "message": "Message sent successfully."}
 
+def read_messages(username, num_messages):
+    db_pathname = get_db_pathname()
+
+    # Find path to target user's unread messages
+    target_db_pathname = os.path.join(db_pathname, "unread_messages", f"{username}.json")
+    if not os.path.exists(target_db_pathname):
+        return {"success": False, "message": "Target user does not exist."}
+
+    with open(target_db_pathname, "r") as f:
+        unread_messages = json.load(f)
+    
+    with open(target_db_pathname, "w") as f:
+        json.dump(unread_messages[num_messages:], f)
+    
+    return_data = {
+        "success": True,
+        "message": "Messages read successfully.",
+        "messages": unread_messages[:num_messages]
+    }
+    return return_data
+
 def check_if_online(username):
     existing_users = load_user_data()
     if username in existing_users:
         user = existing_users[username]
         return user["online"]
     
-    raise ValueError("Username does not exist.")
-    # return False
+    return False
+    # raise ValueError("Username does not exist.")
 
 def get_db_pathname():
     current_dir = os.path.dirname(__file__)
     base_dir = os.path.dirname(current_dir)
     db_pathname = os.path.join(base_dir, 'db')
     return db_pathname
+
+def logout_all_users():
+    existing_users = load_user_data()
+    for username in existing_users:
+        user = existing_users[username]
+        user["online"] = False
+        user["host"] = ""
+        user["port"] = ""
+    save_user_data(existing_users)
+    

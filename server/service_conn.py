@@ -3,10 +3,13 @@
 import json
 import selectors
 
+import socket
 import sys
 sys.path.append('../')
 from helpers.socket_io import read_socket, write_socket
-from account_management import check_if_online, create_account, list_accounts, login, logout, send_offline_message
+from account_management import check_if_online, create_account, list_accounts, login, logout, read_messages, send_offline_message
+
+socket_map = {}
 
 def service_connection(sel, key, mask):
     sock = key.fileobj
@@ -29,25 +32,24 @@ def service_connection(sel, key, mask):
             decoded_data = json.loads(decoded_data)
           
             match decoded_data["command"]:
-                case "send_chat":
-                    return_msg = decoded_data["message"] + " TESTTTT"
-                    return_data = {"message": return_msg}
-                    sent = write_socket(sock, return_data)
-                    print(f"Sending {return_data} to {data.addr}")
-                    data.outb = b''     # TODO: This is a hack to get it to work for now. This may be problematic if not all of the message is sent at once.
-                    
                 case "signup":
                     username = decoded_data["username"]
                     password = decoded_data["password"]
-                    return_data = create_account(username, password)
+                    host, port = data.addr
+                    return_data = create_account(username, password, host, port)
+
+                    # socket_map[username] = sock
                     sent = write_socket(sock, return_data)
                     print(f"Sending {return_data} to {data.addr}")
+                    print(f"Socket map: {socket_map}")
                     data.outb = b''
                    
                 case "login":
                     username = decoded_data["username"]
                     password = decoded_data["password"]
-                    return_data = login(username, password)
+                    host, port = data.addr
+
+                    return_data = login(username, password, host, port)
                     sent = write_socket(sock, return_data)
                     print(f"Sending {return_data} to {data.addr}")
                     data.outb = b''
@@ -57,6 +59,9 @@ def service_connection(sel, key, mask):
                     return_data = logout(username)
                     sent = write_socket(sock, return_data)
                     print(f"Sending {return_data} to {data.addr}")
+                    if username in socket_map:
+                        del socket_map[username]
+                    print(f"Socket map: {socket_map}")
                     data.outb = b''
 
                 case "list":
@@ -70,13 +75,56 @@ def service_connection(sel, key, mask):
                     target_username = decoded_data["target_username"]
                     message = decoded_data["message"]
                     timestamp = int(decoded_data["timestamp"])  # Seconds since epoch
-
+                    sender_username = decoded_data["sender_username"]
                     message = decoded_data["message"]
-                    return_data = send_offline_message(target_username, message, timestamp)
-                    
+
+                    target_logged_in = check_if_online(target_username)
+
+                    if target_logged_in and target_username in socket_map:
+                        target_socket = socket_map[target_username]
+                        return_data_to_recipient = {
+                            "success": True, 
+                            "message": message, 
+                            "sender": sender_username
+                        }
+                        sent = write_socket(target_socket, return_data_to_recipient)
+
+                        return_data_to_sender = {
+                            "success": True,
+                            "message": f"Message sent successfully to {target_username}"
+                        }
+                        sent = write_socket(sock, return_data_to_sender)
+                        data.outb = b''
+
+                    else:
+                        return_data = send_offline_message(target_username, sender_username, message, timestamp)
+                        sent = write_socket(sock, return_data)
+                        print(f"Sending {return_data} to {data.addr}")
+                        data.outb = b''
+
+                case "register":
+                    username = decoded_data["username"]
+                    host = decoded_data["host"]
+                    port = decoded_data["port"]
+
+                    msg_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                    msg_socket.connect((host, port))
+                    socket_map[username] = msg_socket
+                    return_data = {"message": "Registered successfully", "success": True}
                     sent = write_socket(sock, return_data)
-                    print(f"Sending {return_data} to {data.addr}")
                     data.outb = b''
+                
+                case "read":
+                    username = decoded_data["username"]
+                    num_messages = int(decoded_data["num_messages"])
+                    return_data = read_messages(username, num_messages)
+                    sent = write_socket(sock, return_data)
+                    data.outb = b''
+
+
+
+                    
+
 
                 case _:
                     unrecognized_command_message = "Unrecognized command. Please try again!"
