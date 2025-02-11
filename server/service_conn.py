@@ -7,7 +7,7 @@ import socket
 import sys
 sys.path.append('../')
 from helpers.socket_io import read_socket, write_socket
-from account_management import check_if_online, create_account, list_accounts, login, logout, read_messages, send_offline_message
+from account_management import check_if_online, create_account, list_accounts, login, logout, read_messages, send_offline_message, delete_account, delete_message
 
 socket_map = {}
 
@@ -117,6 +117,19 @@ def service_connection(sel, key, mask):
                     username = decoded_data["username"]
                     num_messages = int(decoded_data["num_messages"])
                     return_data = read_messages(username, num_messages)
+                    sent = write_socket(sock, return_data)
+                    data.outb = b''
+                
+                case "delete_account":
+                    username = decoded_data["username"]
+                    return_data = delete_account(username)
+                    sent = write_socket(sock, return_data)
+                    data.outb = b''
+
+                case "delete_message":
+                    sender_username = decoded_data["username"]
+                    message_id = decoded_data["message_id"]
+                    return_data = delete_message(sender_username, message_id)
                     sent = write_socket(sock, return_data)
                     data.outb = b''
 
