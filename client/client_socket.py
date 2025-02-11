@@ -12,8 +12,8 @@ def attempt_signup(client_sock, username, password):
     if not data:
         return {"success": False, "message": "Server side error while attempting signup. Please try again!"}
 
-    data = data.decode("utf-8")
-    data = json.loads(data)
+    # data = data.decode("utf-8")
+    # data = json.loads(data)
     return {"success": data["success"], "message": data["message"]}   # TODO: Make this actually correspond to what server responded
   
 def attempt_login(client_sock, username, password):
@@ -25,7 +25,7 @@ def attempt_login(client_sock, username, password):
     if not data:
         return {"success": False, "message": "Server side error while attempting login. Please try again!"}
 
-    data = data.decode("utf-8")
-    data = json.loads(data)
+    # data = data.decode("utf-8")
+    # data = json.loads(data)
     return {"success":  data["success"], "message": data["message"]}   # TODO: Make this actually correspond to what server responded
 

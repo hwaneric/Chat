@@ -11,7 +11,7 @@ import readline # Need to import readline to allow inputs to accept string with 
 from client_socket import attempt_login, attempt_signup
 import sys
 sys.path.append('../')
-from helpers.socket_io import read_socket, write_socket
+from helpers.socket_io import read_socket, write_socket, deserialize
 
 load_dotenv()
 HOST = os.getenv("HOST")
@@ -37,8 +37,9 @@ class Client:
         if not data:
             print(f"Signup Failed. Please try again: Server side error while attempting login. Please try again!")
         
-        data = data.decode("utf-8")
-        data = json.loads(data)
+        data = deserialize(data)
+        # data = data.decode("utf-8")
+        # data = json.loads(data)
         if data["success"]:
             print("Successfully signed up!")
             self.username = username
@@ -51,13 +52,16 @@ class Client:
         password = input("Enter password: ")
         msg_data = {"command": "login", "username": username, "password": password}
 
+        print("ABOUT TO WRITE TO SOCKET")
         sent = write_socket(self.sock, msg_data)
         data = read_socket(self.sock)
         if not data:
             print(f"Login Failed. Please try again: Server side error while attempting login. Please try again!")
         
-        data = data.decode("utf-8")
-        data = json.loads(data)
+        # data = data.decode("utf-8")
+        # data = json.loads(data)
+        data = deserialize(data)
+
         if data["success"]:
             print("Successfully logged in!")
             self.username = username
@@ -76,8 +80,12 @@ class Client:
                 print("Server side error while attempting to list accounts. Please try again!")
                 return
 
-            data = data.decode("utf-8")
-            data = json.loads(data)
+            # data = data.decode("utf-8")
+            # data = json.loads(data)
+            data = deserialize(data)
+            if not data["success"]:
+                print(f"Failed to list accounts: {data["message"]}")
+                return
             print(f"Accounts matching pattern {username_pattern}: ")
             for username in data["matches"]:
                 print(f"{username}")
@@ -106,8 +114,9 @@ class Client:
                 print("Server side error while attempting to send message. Please try again!")
                 return
 
-            data = data.decode("utf-8")
-            data = json.loads(data)
+            # data = data.decode("utf-8")
+            # data = json.loads(data)
+            data = deserialize(data)
             if data["success"]:
                 print(f"Message sent successfully to {target_username}")
             else:
@@ -130,8 +139,9 @@ class Client:
                 print("Server side error while attempting to logout. Please try again!")
                 return
 
-            data = data.decode("utf-8")
-            data = json.loads(data)
+            # data = data.decode("utf-8")
+            # data = json.loads(data)
+            data = deserialize(data)
             if data["success"]:
                 print(f"Successfully logged out of {self.username}")
                 self.username = None
@@ -153,8 +163,9 @@ class Client:
                 print("Server side error while attempting to read messages. Please try again!")
                 return
 
-            data = data.decode("utf-8")
-            data = json.loads(data)
+            # data = data.decode("utf-8")
+            # data = json.loads(data)
+            data = deserialize(data)
             if data["success"]:
                 for message in data["messages"]:
                     dt = datetime.datetime.fromtimestamp(message["timestamp"])
@@ -259,8 +270,9 @@ class Client:
         if not data:
             print(f"Server side error while attempting to register listening socket for messages. Please try again!")
         
-        data = data.decode("utf-8")
-        data = json.loads(data)
+        # data = data.decode("utf-8")
+        # data = json.loads(data)
+        data = deserialize(data)
 
         if not data["success"]:
             print(f"Failed to register for messages: {data['message']}")
@@ -298,9 +310,10 @@ class Client:
 
                     # Server sent message                    
                     else:
-                        data = recv_data.decode("utf-8")
-                        data = json.loads(data)
-                        print(f"\nNew message from {data['sender']}: {data['message']}")
+                        # data = recv_data.decode("utf-8")
+                        # data = json.loads(data)
+                        data = deserialize(recv_data)
+                        print(f"\nNew message from {data["sender"]}: {data["message"]}")
 
 if __name__ == "__main__":
     client = Client(HOST, PORT)
