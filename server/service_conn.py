@@ -6,7 +6,7 @@ import selectors
 import socket
 import sys
 sys.path.append('../')
-from helpers.socket_io import read_socket, write_socket
+from helpers.socket_io import read_socket, write_socket, deserialize
 from account_management import check_if_online, create_account, list_accounts, login, logout, read_messages, send_offline_message
 
 socket_map = {}
@@ -27,9 +27,10 @@ def service_connection(sel, key, mask):
 
     if mask & selectors.EVENT_WRITE:
         if data.outb:
-            decoded_data = data.outb.decode("utf-8").strip()
+            decoded_data = deserialize(data.outb)
+            # decoded_data = data.outb.decode("utf-8").strip()
             print("raw data:", data.outb, "decoded_data:", decoded_data)
-            decoded_data = json.loads(decoded_data)
+            # decoded_data = json.loads(decoded_data)
           
             match decoded_data["command"]:
                 case "signup":
@@ -84,13 +85,15 @@ def service_connection(sel, key, mask):
                         return_data_to_recipient = {
                             "success": True, 
                             "message": message, 
-                            "sender": sender_username
+                            "sender": sender_username,
+                            "command": "online_message"
                         }
                         sent = write_socket(target_socket, return_data_to_recipient)
 
                         return_data_to_sender = {
                             "success": True,
-                            "message": f"Message sent successfully to {target_username}"
+                            "message": f"Message sent successfully to {target_username}",
+                            "command": "server_response"
                         }
                         sent = write_socket(sock, return_data_to_sender)
                         data.outb = b''
@@ -109,7 +112,7 @@ def service_connection(sel, key, mask):
                     msg_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                     msg_socket.connect((host, port))
                     socket_map[username] = msg_socket
-                    return_data = {"message": "Registered successfully", "success": True}
+                    return_data = {"message": "Registered successfully", "success": True, "command": "server_response"}
                     sent = write_socket(sock, return_data)
                     data.outb = b''
                 
