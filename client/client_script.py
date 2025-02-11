@@ -356,7 +356,7 @@ if __name__ == "__main__":
                         case "\\read":
                             client.read()
                         case "\delete_account":
-                            client.delete_acc()
+                            client.delete_account()
                             break
                         case _:
                             print("Invalid command. Please try again")
