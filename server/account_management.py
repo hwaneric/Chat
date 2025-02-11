@@ -2,6 +2,7 @@ import json
 import os 
 import re
 import time
+import uuid
 
 USER_DATA_FILE = "user_data.json"
 
@@ -86,12 +87,15 @@ def send_offline_message(target_username, sender_username, message, timestamp):
     existing_users = load_user_data()
     db_pathname = get_db_pathname()
 
+    # Generate a unique message ID
+    message_id = str(uuid.uuid4())
+
     # Find path to target user's unread messages
     target_db_pathname = os.path.join(db_pathname, "unread_messages", f"{target_username}.json")
     if not os.path.exists(target_db_pathname):
         return {"success": False, "message": "Target user does not exist."}
 
-    new_message = {"message": message, "sender": sender_username, "timestamp": timestamp}
+    new_message = {"message_id": message_id, "message": message, "sender": sender_username, "timestamp": timestamp}
     with open(target_db_pathname, "r") as f:
         unread_messages = json.load(f)
     
@@ -106,6 +110,21 @@ def send_offline_message(target_username, sender_username, message, timestamp):
     unread_messages.insert(insert_position, new_message)
     with open(target_db_pathname, "w") as f:
         json.dump(unread_messages, f)
+
+    # Save the sent message to the sender's sent messages
+    sent_db_pathname = os.path.join(db_pathname, "sent_messages", f"{sender_username}.json")
+    if not os.path.exists(sent_db_pathname):
+        sent_messages = {}
+    else:
+        with open(sent_db_pathname, "r") as f:
+            sent_messages = json.load(f)
+    
+    if target_username not in sent_messages:
+        sent_messages[target_username] = []
+    
+    sent_messages[target_username].append({"message_id": message_id, "message": message, "timestamp": timestamp})
+    with open(sent_db_pathname, "w") as f:
+        json.dump(sent_messages, f)
 
     end = time.time()
     print(f"Time to send offline message: {end - start} seconds")
@@ -155,4 +174,72 @@ def logout_all_users():
         user["host"] = ""
         user["port"] = ""
     save_user_data(existing_users)
+
+def delete_account(username):
+    existing_users = load_user_data()
+
+    if username not in existing_users:
+        return {"success": False, "message": "Username does not exist."}
     
+    if existing_users[username]["online"]:
+        del existing_users[username]
+        save_user_data(existing_users)
+
+        db_pathname = get_db_pathname()
+        unread_messages_path = os.path.join(db_pathname, "unread_messages", f"{username}.json")
+        if os.path.exists(unread_messages_path):
+            os.remove(unread_messages_path)
+
+        sent_messages_path = os.path.join(db_pathname, "sent_messages", f"{username}.json")
+        if os.path.exists(sent_messages_path):
+            os.remove(sent_messages_path)
+
+        return {"success": True, "message": "Account deleted successfully."}
+    
+    return {"success": False, "message": "Attempting to delete offline account."}
+    
+def delete_message(username, message_id):
+    db_pathname = get_db_pathname()
+
+    # Load the user's sent messages
+    sent_db_pathname = os.path.join(db_pathname, "sent_messages", f"{username}.json")
+    if not os.path.exists(sent_db_pathname):
+        return {"success": False, "message": "No sent messages found."}
+    
+    with open(sent_db_pathname, "r") as f:
+        sent_messages = json.load(f)
+    
+    # Find and delete the message with the given message_id
+    target_username = None
+    for recipient, messages in sent_messages.items():
+        for message in messages: 
+            if message["message_id"] == message_id:
+                target_username = recipient
+                break
+        if target_username:
+            break
+
+    if not target_username: 
+        return {"success": False, "message": "Message ID not found."}
+    
+    # Remove message from sent_messages
+    sent_messages[target_username] = [msg for msg in sent_messages[target_username] if msg["message_id"] != message_id]
+    with open(sent_db_pathname, "w") as f:
+        json.dump(sent_messages, f)
+
+    # Load the target user's unread messages
+    target_db_pathname = os.path.join(db_pathname, "unread_messages", f"{target_username}.json")
+    if not os.path.exists(target_db_pathname):
+        return {"success": False, "message": "Target user does not exist."}
+    
+    with open(target_db_pathname, "r") as f:
+        unread_messages = json.load(f)
+
+    # Remove message from target user's unread_messages
+    unread_messages = [msg for msg in unread_messages if msg["message_id"] != message_id]
+    with open(target_db_pathname, "w") as f:
+        json.dump(unread_messages, f)
+
+    return {"success": True, "message": "Message deleted successfully."}
+
+
