@@ -1,1 +1,1 @@
-{"eric": {"username": "eric", "password": "test", "online": true, "host": "127.0.0.1", "port": 58272}, "bbooty": {"username": "bbooty", "password": "test", "online": false, "host": "", "port": ""}}
+{"eric": {"username": "eric", "password": "test", "online": false, "host": "", "port": ""}, "bbooty": {"username": "bbooty", "password": "test", "online": false, "host": "", "port": ""}}
