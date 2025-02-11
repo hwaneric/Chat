@@ -72,10 +72,9 @@ def service_connection(sel, key, mask):
                     data.outb = b''
 
                 case "message":
-                    target_username = decoded_data["target_username"]
-                    message = decoded_data["message"]
-                    timestamp = int(decoded_data["timestamp"])  # Seconds since epoch
                     sender_username = decoded_data["sender_username"]
+                    target_username = decoded_data["target_username"]
+                    timestamp = int(decoded_data["timestamp"])  # Seconds since epoch
                     message = decoded_data["message"]
 
                     target_logged_in = check_if_online(target_username)
@@ -120,11 +119,6 @@ def service_connection(sel, key, mask):
                     return_data = read_messages(username, num_messages)
                     sent = write_socket(sock, return_data)
                     data.outb = b''
-
-
-
-                    
-
 
                 case _:
                     unrecognized_command_message = "Unrecognized command. Please try again!"
