@@ -1,6 +1,6 @@
 import tkinter as tk
 from tkinter import messagebox
-from client_script import Client
+from client import Client
 import threading
 from dotenv import load_dotenv
 import os
@@ -177,8 +177,14 @@ class ChatApp:
     
     def read(self):
         num_messages = self.num_messages_entry.get()
+        if not num_messages.isdigit():
+            messagebox.showerror("Invalid Input", "Number of messages must be an integer")
+            return
         success, response = self.client.read(num_messages)
         if success:
+            if not response:
+                messagebox.showinfo("No Messages", "You have no unread messages")
+                return
             self.read_message_list.delete(0, tk.END)
             for message in response:
                 self.read_message_list.insert(tk.END, message)

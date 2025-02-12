@@ -60,7 +60,11 @@ def serialize(data, json_mode):
         case "read":
             username = data["username"].encode("utf-8")
             username_len = len(username).to_bytes(DATA_LENGTH_SIZE, byteorder="big")
-            num_messages = int(data["num_messages"])
+            try:
+                num_messages = int(data["num_messages"])
+            except ValueError:
+                print("Number of requested messages was not an integer. Defaulting to 0.")
+                num_messages = 0
             num_messages = num_messages.to_bytes(DATA_LENGTH_SIZE, byteorder="big")
             data_serialization = username_len + username + num_messages
         
