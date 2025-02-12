@@ -140,6 +140,17 @@ def serialize(data, json_mode):
                 serialized_messages = serialize_message_list(messages)
                 serialized_messages_len = len(serialized_messages).to_bytes(DATA_LENGTH_SIZE, byteorder="big")
                 data_serialization += serialized_messages_len + serialized_messages
+        
+        case "login_response":
+            success = data["success"]
+            success = success.to_bytes(1, byteorder="big")
+            message = data["message"].encode("utf-8")
+            message_len = len(message).to_bytes(DATA_LENGTH_SIZE, byteorder="big")
+
+            unread_message_count = data["unread_message_count"]
+            unread_message_count = unread_message_count.to_bytes(DATA_LENGTH_SIZE, byteorder="big")
+
+            data_serialization = success + message_len + message + unread_message_count
 
         case _:
             raise ValueError(f"Invalid command: {data['command']}")
@@ -331,7 +342,7 @@ def deserialize(data):
 
             message_len = int.from_bytes(data[index:index+DATA_LENGTH_SIZE], byteorder="big")
             index = index + DATA_LENGTH_SIZE
-            message = data[index:index+DATA_LENGTH_SIZE].decode("utf-8")
+            message = data[index:index+message_len].decode("utf-8")
             index = index + message_len
             messages = deserialize_message_list(data[index:])
 
@@ -368,6 +379,18 @@ def deserialize(data):
                 sent_messages[recipient] = messages
             
             return {"success": success, "message": message, "sent_messages": sent_messages}
+
+        case "login_response":
+            success = bool.from_bytes(data[index:index+1], byteorder="big")
+            index = index + 1
+
+            message_len = int.from_bytes(data[index:index+DATA_LENGTH_SIZE], byteorder="big")
+            index = index + DATA_LENGTH_SIZE
+            message = data[index:index+message_len].decode("utf-8")
+            index += message_len
+
+            unread_message_count = int.from_bytes(data[index:index+DATA_LENGTH_SIZE], byteorder="big")
+            return {"success": success, "message": message, "unread_message_count": unread_message_count}
 
         case _:
             raise ValueError(f"Invalid command: {command}")

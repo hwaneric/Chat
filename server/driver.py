@@ -8,10 +8,11 @@ from dotenv import load_dotenv
 import os
 
 load_dotenv()
-HOST = os.getenv("HOST")
-PORT = int(os.getenv("PORT"))
+HOST = os.getenv("SERVER_HOST")
+PORT = int(os.getenv("SERVER_PORT"))
 
 sel = selectors.DefaultSelector()
+print("hostname:", socket.gethostbyname(socket.gethostname()))
 
 if __name__ == "__main__":
     lsock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)

@@ -5,8 +5,10 @@ import threading
 from dotenv import load_dotenv
 import os
 
-HOST = os.getenv("HOST")
-PORT = int(os.getenv("PORT"))
+load_dotenv()
+SERVER_HOST = os.getenv("SERVER_HOST")
+SERVER_PORT = int(os.getenv("SERVER_PORT"))
+CLIENT_HOST = os.getenv("CLIENT_HOST")
 
 class ChatApp: 
     def __init__(self, root, client):
@@ -156,11 +158,14 @@ class ChatApp:
     def login(self):
         username = self.username_entry.get()
         password = self.password_entry.get()
-        success, message = self.client.login(username, password)
+        success, message, unread_message_count = self.client.login(username, password)
         if success:
+            print("message", message)
             messagebox.showinfo("Login Successful", message)  
             self.login_frame.pack_forget()
             self.chat_frame.pack()
+            self.incoming_message_list.delete(0, tk.END)
+            self.incoming_message_list.insert(tk.END, f"Welcome {username}! You have {unread_message_count} unread messages.")
             threading.Thread(target=self.client.listen_for_messages, args=(self.update_incoming_messages,), daemon = True).start()
         else: 
             messagebox.showerror("Login Failed", message)
@@ -264,7 +269,7 @@ class ChatApp:
 
 if __name__ == "__main__":
     try:
-        client = Client(HOST, PORT)
+        client = Client(SERVER_HOST, SERVER_PORT, CLIENT_HOST)
         client.connect()
         root = tk.Tk()
         app = ChatApp(root, client)
