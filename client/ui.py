@@ -21,17 +21,18 @@ class ChatApp:
         self.message_frame = tk.Frame(self.root)
         self.list_frame = tk.Frame(self.root)
         self.read_frame = tk.Frame(self.root)
+        self.delete_message_frame = tk.Frame(self.root)
 
         self.create_login_frame()
         self.create_chat_frame()
         self.create_message_frame()
         self.create_list_frame()
         self.create_read_frame()
+        self.create_delete_message_frame()
 
         self.login_frame.pack()
 
         self.root.protocol("WM_DELETE_WINDOW", self.on_closing)
-
 
     def create_login_frame(self):
         tk.Label(self.login_frame, text="Username").grid(row=0, column=0)
@@ -60,6 +61,9 @@ class ChatApp:
 
         self.read_button = tk.Button(self.chat_frame, text="Read Messages", command=self.show_read_frame)
         self.read_button.pack()
+
+        self.delete_message_button = tk.Button(self.chat_frame, text="Delete Message", command=self.show_delete_message_frame)
+        self.delete_message_button.pack()
         
         self.logout_button = tk.Button(self.chat_frame, text="Logout", command=self.logout)
         self.logout_button.pack()
@@ -109,11 +113,26 @@ class ChatApp:
         
         self.back_button = tk.Button(self.read_frame, text="Back", command=self.show_chat_frame)
         self.back_button.pack()
+
+    def create_delete_message_frame(self):
+        self.delete_message_list = tk.Listbox(self.delete_message_frame, height=15, width=50)
+        self.delete_message_list.pack()
+
+        tk.Label(self.read_frame, text="Message ID to Delete").pack()
+        self.delete_messages_entry = tk.Entry(self.delete_message_frame, width=50)
+        self.delete_messages_entry.pack()
+
+        self.delete_message_button = tk.Button(self.delete_message_frame, text="Delete Message", command=self.delete_message)
+        self.delete_message_button.pack()
+
+        self.back_button = tk.Button(self.delete_message_frame, text="Back", command=self.show_chat_frame)
+        self.back_button.pack()
     
     def show_chat_frame(self):
         self.message_frame.pack_forget()
         self.list_frame.pack_forget()
         self.read_frame.pack_forget()
+        self.delete_message_frame.pack_forget()
         self.chat_frame.pack()
     
     def show_message_frame(self):
@@ -127,6 +146,11 @@ class ChatApp:
     def show_read_frame(self):
         self.chat_frame.pack_forget()
         self.read_frame.pack()
+
+    def show_delete_message_frame(self):
+        self.chat_frame.pack_forget()
+        self.fetch_sent_messages()
+        self.delete_message_frame.pack()
 
     def update_incoming_messages(self, message):
         self.incoming_message_list.insert(tk.END, message)
@@ -193,6 +217,29 @@ class ChatApp:
         else:
             messagebox.showerror("Read Messages Failed", response)
 
+    def fetch_sent_messages(self):
+        success, response = self.client.fetch_sent_messages()
+        if success:
+            self.delete_message_list.delete(0, tk.END)
+            for recipient, messages in response.items():
+                for message in messages:
+                    display_message = f"To: {recipient}, ID: {message['message_id']}, Message: {message['message']}"
+                    self.delete_message_list.insert(tk.END, display_message)
+        else:
+            messagebox.showerror("Fetch Sent Messages Failed", response)
+
+    def delete_message(self):
+        message_id = self.delete_messages_entry.get()
+        if not message_id:
+            messagebox.showerror("Invalid Input", "Message ID cannot be empty")
+            return
+        success, response = self.client.delete_message(message_id)
+        if success:
+            messagebox.showinfo("Delete Message Successful", response)
+            self.fetch_sent_messages()
+        else:
+            messagebox.showerror("Delete Message Failed", response)
+
     def logout(self):
         if not self.client.username:
             return False, "You are not logged in! Logout unsuccessful"
@@ -221,8 +268,13 @@ class ChatApp:
 
 
 if __name__ == "__main__":
-    client = Client(SERVER_HOST, SERVER_PORT, CLIENT_HOST)
-    client.connect()
-    root = tk.Tk()
-    app = ChatApp(root, client)
-    root.mainloop()
+    try:
+        client = Client(SERVER_HOST, SERVER_PORT, CLIENT_HOST)
+        client.connect()
+        root = tk.Tk()
+        app = ChatApp(root, client)
+        root.mainloop()
+    except KeyboardInterrupt:
+        print("Client interrupted by user, exiting...")
+    finally:
+        client.sock.close()

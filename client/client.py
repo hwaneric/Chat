@@ -153,6 +153,21 @@ class Client:
             return True, "Successfully deleted account!"
         else:
             return False, data["message"]
+        
+    def fetch_sent_messages(self):
+        if not self.username:
+            return False, "You are not logged in! Fetch sent messages unsuccessful"
+        msg_data = {"command": "fetch_sent_messages", "username": self.username}
+        sent = write_socket(self.sock, msg_data)
+        data = read_socket(self.sock)
+        if not data:
+            return False, "Server side error while attempting to fetch sent messages. Please try again!"
+    
+        data = deserialize(data)
+        if data["success"]:
+            return True, data["sent_messages"]
+        else:
+            return False, data["message"]
     
     def delete_message(self, message_id): 
         if not self.username:
@@ -164,7 +179,7 @@ class Client:
         if not data:
             return False, "Server side error while attempting to delete message. Please try again!"
         
-        data = json.loads(data.decode("utf-8"))
+        data = deserialize(data)
         if data["success"]:
             return True, f"Successfully deleted message {message_id}!"
         else:

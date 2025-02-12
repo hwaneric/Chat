@@ -210,10 +210,24 @@ def read_messages(username, num_messages):
 
     with open(target_db_pathname, "r") as f:
         unread_messages = json.load(f)
+
+    msg_to_read = unread_messages[:num_messages]
     
     with open(target_db_pathname, "w") as f:
         json.dump(unread_messages[num_messages:], f)
-    
+
+    for message in msg_to_read: 
+        sender_username = message["sender"]
+        message_id = message["message_id"]
+        sent_db_pathname = os.path.join(db_pathname, "sent_messages", f"{sender_username}.json")
+        if os.path.exists(sent_db_pathname):
+            with open(sent_db_pathname, "r") as f:
+                sent_messages = json.load(f)
+            for recipient, messages in sent_messages.items():
+                sent_messages[recipient] = [msg for msg in messages if msg["message_id"] != message_id]
+            with open(sent_db_pathname, "w") as f:
+                json.dump(sent_messages, f)
+                
     return_data = {
         "success": True,
         "message": "Messages read successfully.",
