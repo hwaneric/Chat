@@ -7,6 +7,7 @@ To begin running the project locally:
 In the project root directory, create a virtual environment by running ```python3 -m venv .venv```
 Next, activate the virtual environment by running ```source venv/bin/activate``` on Mac or ```venv\Scripts\activate``` on Windows.
 Once you have activated the virtual environment, run ```pip install -r requirements.txt``` to install project dependencies. 
+Next, install Tkinter, which we use for the user interface. Tkinter is not distributed on pip3, so installation depends on the OS. For Mac, make sure you have homebrew installed and run ```brew install python-tk```. 
 For the final step of setup, add a file titled ```.env``` in the root directory of the project. Populate this file with 2 variables:
 ```
   HOST = "127.0.0.1"
