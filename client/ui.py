@@ -154,8 +154,7 @@ class ChatApp:
         self.delete_message_frame.pack()
 
     def update_incoming_messages(self, message):
-        for msg in message:
-            self.incoming_message_list.insert(tk.END, msg)
+        self.incoming_message_list.insert(tk.END, message)
     
     def login(self):
         username = self.username_entry.get()
@@ -287,4 +286,6 @@ if __name__ == "__main__":
     except KeyboardInterrupt:
         print("Client interrupted by user, exiting...")
     finally:
+        if client.username:
+            client.logout()
         client.sock.close()

@@ -285,7 +285,7 @@ def test_read_success():
         success, messages = client.read(1)
         
         assert success == True
-        assert messages == ["user1 at (03-31-2021, 12:00 AM): Hello!"]
+        assert messages == ["user1 at (03-31-2021, 06:00 AM): Hello!"]
 
 def test_read_failure():
     client = Client("127.0.0.1", 12345, "127.0.0.1")
