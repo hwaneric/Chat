@@ -27,9 +27,7 @@ def service_connection(sel, key, mask):
     if mask & selectors.EVENT_WRITE:
         if data.outb:
             decoded_data = deserialize(data.outb)
-            # decoded_data = data.outb.decode("utf-8").strip()
             print("raw data:", data.outb, "decoded_data:", decoded_data)
-            # decoded_data = json.loads(decoded_data)
           
             match decoded_data["command"]:
                 case "signup":
