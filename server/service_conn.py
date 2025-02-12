@@ -78,6 +78,9 @@ def service_connection(sel, key, mask):
                     message = decoded_data["message"]
 
                     target_logged_in = check_if_online(target_username)
+                    print(target_logged_in)
+                    print(target_username in socket_map)
+                    print(socket_map)
 
                     if target_logged_in and target_username in socket_map:
                         target_socket = socket_map[target_username]
