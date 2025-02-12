@@ -38,10 +38,7 @@ def service_connection(sel, key, mask):
                     host, port = data.addr
                     return_data = create_account(username, password, host, port)
 
-                    # socket_map[username] = sock
                     sent = write_socket(sock, return_data)
-                    print(f"Sending {return_data} to {data.addr}")
-                    print(f"Socket map: {socket_map}")
                     data.outb = b''
                    
                 case "login":

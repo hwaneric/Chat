@@ -184,8 +184,15 @@ def serialize_message_list(message_list):
 
     return data_serialization
 
-def deserialize(data):
+def deserialize(data):    
     json_mode = bool.from_bytes(data[:1], byteorder="big")
+
+    if json_mode:
+        print("MODE: JSON")
+    else:
+        print("MODE: WIRE PROTOCOL")
+    print(f"Number of bytes received: {len(data)}")
+
     if json_mode:
         return json.loads(data[1:])
     command_id = int.from_bytes(data[1:2], byteorder="big")
