@@ -277,4 +277,6 @@ if __name__ == "__main__":
     except KeyboardInterrupt:
         print("Client interrupted by user, exiting...")
     finally:
+        if client.username:
+            client.logout()
         client.sock.close()
