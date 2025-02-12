@@ -342,7 +342,7 @@ def deserialize(data):
 
             message_len = int.from_bytes(data[index:index+DATA_LENGTH_SIZE], byteorder="big")
             index = index + DATA_LENGTH_SIZE
-            message = data[index:index+DATA_LENGTH_SIZE].decode("utf-8")
+            message = data[index:index+message_len].decode("utf-8")
             index = index + message_len
             messages = deserialize_message_list(data[index:])
 
