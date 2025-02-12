@@ -14,14 +14,15 @@ sys.path.append('../')
 from helpers.socket_io import read_socket, write_socket
 from helpers.serialization import deserialize
 
-load_dotenv()
-HOST = os.getenv("HOST")
-PORT = int(os.getenv("PORT"))
+# load_dotenv()
+# HOST = os.getenv("HOST")
+# PORT = int(os.getenv("PORT"))
 
 class Client:
-    def __init__(self, host, port, username=None):
-        self.host = host
-        self.port = port
+    def __init__(self, server_host, server_port, client_host, username=None):
+        self.server_host = server_host
+        self.server_port = server_port
+        self.client_host = client_host
         self.sock = None
         self.username = username
         self.sel = selectors.DefaultSelector()
@@ -30,7 +31,7 @@ class Client:
     def connect(self):
         try:
             self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            self.sock.connect((self.host, self.port))
+            self.sock.connect((self.server_host, self.sever_port))
         except Exception as e:
             print("Error connecting to server:", e)
             sys.exit(1)
@@ -175,7 +176,7 @@ class Client:
             delivered immediately. 
         '''
         self.lsock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.lsock.bind((self.host, 0))
+        self.lsock.bind((self.client_host, 0))
         self.lsock.listen()
         print(f"Listening for messages on {self.lsock.getsockname()}")
         self.lsock.setblocking(False)
@@ -185,7 +186,7 @@ class Client:
         msg_data = {
             "command": "register", 
             "username": self.username, 
-            "host": self.host, 
+            "host": self.client_host, 
             "port": self.lsock.getsockname()[1]
         }
         sent = write_socket(self.sock, msg_data)

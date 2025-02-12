@@ -5,8 +5,9 @@ import threading
 from dotenv import load_dotenv
 import os
 
-HOST = os.getenv("HOST")
-PORT = int(os.getenv("PORT"))
+SERVER_HOST = os.getenv("SERVER_HOST")
+SERVER_PORT = int(os.getenv("SERVER_PORT"))
+CLIENT_HOST = os.getenv("CLIENT_HOST")
 
 class ChatApp: 
     def __init__(self, root, client):

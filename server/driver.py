@@ -12,6 +12,7 @@ HOST = os.getenv("HOST")
 PORT = int(os.getenv("PORT"))
 
 sel = selectors.DefaultSelector()
+print("hostname:", socket.gethostbyname(socket.gethostname()))
 
 if __name__ == "__main__":
     lsock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
