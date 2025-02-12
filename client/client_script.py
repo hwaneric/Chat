@@ -1,4 +1,5 @@
 import datetime
+import traceback
 import json
 import selectors
 import threading
@@ -8,10 +9,10 @@ import types
 from dotenv import load_dotenv
 import os
 import readline # Need to import readline to allow inputs to accept string with length > 1048
-from client_socket import attempt_login, attempt_signup
 import sys
 sys.path.append('../')
 from helpers.socket_io import read_socket, write_socket
+from helpers.serialization import deserialize
 
 load_dotenv()
 HOST = os.getenv("HOST")
@@ -40,7 +41,10 @@ class Client:
         data = read_socket(self.sock)
         if not data:
             return False, "Server side error while attempting signup. Please try again!"        
-        data = json.loads(data.decode("utf-8"))
+        
+        data = deserialize(data)
+        # data = data.decode("utf-8")
+        # data = json.loads(data)
         if data["success"]:
             self.username = username
             return True, "Successfully signed up!"
@@ -53,7 +57,9 @@ class Client:
         data = read_socket(self.sock)
         if not data:
             return False, "Server side error while attempting login. Please try again!"        
-        data = json.loads(data.decode("utf-8"))
+
+        data = deserialize(data)
+
         if data["success"]:
             self.username = username
             return True, "Successfully logged in!"
@@ -65,8 +71,10 @@ class Client:
         sent = write_socket(self.sock, msg_data)
         data = read_socket(self.sock)
         if not data:
-            return False, "Server side error while attempting to list users. Please try again!"        
-        data = json.loads(data.decode("utf-8"))
+            return False, "Server side error while attempting to list users. Please try again!" 
+               
+        # data = json.loads(data.decode("utf-8"))
+        data = deserialize(data)
         if data["success"]:
             return True, data["matches"]
         else:
@@ -83,8 +91,10 @@ class Client:
         sent = write_socket(self.sock, msg_data)
         data = read_socket(self.sock)
         if not data:
-            return False, "Server side error while attempting to send message. Please try again!"        
-        data = json.loads(data.decode("utf-8"))
+            return False, "Server side error while attempting to send message. Please try again!"     
+          
+        # data = json.loads(data.decode("utf-8"))
+        data = deserialize(data)
         if data["success"]:
             return True, f"Message sent successfully to {target_username}!"
         else:
@@ -97,8 +107,10 @@ class Client:
         sent = write_socket(self.sock, msg_data)
         data = read_socket(self.sock)
         if not data:
-            return False, "Server side error while attempting to logout. Please try again!"        
-        data = json.loads(data.decode("utf-8"))
+            return False, "Server side error while attempting to logout. Please try again!"  
+              
+        # data = json.loads(data.decode("utf-8"))
+        data = deserialize(data)
         if data["success"]:
             self.username = None
             return True, "Successfully logged out!"
@@ -111,7 +123,9 @@ class Client:
         data = read_socket(self.sock)
         if not data:
             return False, "Server side error while attempting to read messages. Please try again!"
-        data = json.loads(data.decode("utf-8"))
+        
+        # data = json.loads(data.decode("utf-8"))
+        data = deserialize(data)
         if data["success"]:
             messages = []
             for message in data["messages"]:
@@ -130,7 +144,9 @@ class Client:
         data = read_socket(self.sock)
         if not data:
             return False, "Server side error while attempting to delete account. Please try again!"
-        data = json.loads(data.decode("utf-8"))
+        
+        # data = json.loads(data.decode("utf-8"))
+        data = deserialize(data)
         if data["success"]:
             self.username = None
             return True, "Successfully deleted account!"
@@ -177,9 +193,11 @@ class Client:
 
         if not data:
             print(f"Server side error while attempting to register listening socket for messages. Please try again!")
+            sys.exit(1)
         
-        data = data.decode("utf-8")
-        data = json.loads(data)
+        # data = data.decode("utf-8")
+        # data = json.loads(data)
+        data = deserialize(data)
 
         if not data["success"]:
             print(f"Failed to register for messages: {data['message']}")
@@ -217,8 +235,9 @@ class Client:
 
                     # Server sent message                    
                     else:
-                        data = recv_data.decode("utf-8")
-                        data = json.loads(data)
+                        # data = recv_data.decode("utf-8")
+                        # data = json.loads(data)
+                        data = deserialize(recv_data)
                         message = f"\nNew message from {data['sender']}: {data['message']}"
                         print(message)
                         update_ui_callback(message)
