@@ -31,7 +31,7 @@ class Client:
     def connect(self):
         try:
             self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            self.sock.connect((self.server_host, self.sever_port))
+            self.sock.connect((self.server_host, self.server_port))
         except Exception as e:
             print("Error connecting to server:", e)
             sys.exit(1)

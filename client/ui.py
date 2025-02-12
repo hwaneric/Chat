@@ -5,6 +5,7 @@ import threading
 from dotenv import load_dotenv
 import os
 
+load_dotenv()
 SERVER_HOST = os.getenv("SERVER_HOST")
 SERVER_PORT = int(os.getenv("SERVER_PORT"))
 CLIENT_HOST = os.getenv("CLIENT_HOST")
@@ -220,7 +221,7 @@ class ChatApp:
 
 
 if __name__ == "__main__":
-    client = Client(HOST, PORT)
+    client = Client(SERVER_HOST, SERVER_PORT, CLIENT_HOST)
     client.connect()
     root = tk.Tk()
     app = ChatApp(root, client)
