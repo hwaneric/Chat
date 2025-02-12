@@ -3,6 +3,7 @@ import sys
 sys.path.append('../')
 from helpers.socket_io import read_socket, write_socket
 
+
 def attempt_signup(client_sock, username, password):
     msg_data = {"command": "signup", "username": username, "password": password}
 
