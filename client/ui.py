@@ -14,6 +14,7 @@ class ChatApp:
     def __init__(self, root, client):
         self.client = client
         self.root = root 
+        self.unread_message_count = 0
         self.root.title("Chat Application")
 
         self.login_frame = tk.Frame(self.root)
@@ -153,13 +154,15 @@ class ChatApp:
         self.delete_message_frame.pack()
 
     def update_incoming_messages(self, message):
-        self.incoming_message_list.insert(tk.END, message)
+        for msg in message:
+            self.incoming_message_list.insert(tk.END, msg)
     
     def login(self):
         username = self.username_entry.get()
         password = self.password_entry.get()
         success, message, unread_message_count = self.client.login(username, password)
         if success:
+            self.unread_message_count = unread_message_count
             print("message", message)
             messagebox.showinfo("Login Successful", message)  
             self.login_frame.pack_forget()
@@ -213,9 +216,16 @@ class ChatApp:
                 return
             self.read_message_list.delete(0, tk.END)
             for message in response:
-                self.read_message_list.insert(tk.END, message)
+                self.read_message_list.insert(tk.END, message) 
+            self.unread_message_count -= len(response)
+            self.update_welcome_message()
         else:
             messagebox.showerror("Read Messages Failed", response)
+    
+    def update_welcome_message(self):
+            self.incoming_message_list.delete(0)
+            self.incoming_message_list.insert(0, f"Welcome {self.client.username}! You have {self.unread_message_count} unread messages.")
+
 
     def fetch_sent_messages(self):
         success, response = self.client.fetch_sent_messages()
