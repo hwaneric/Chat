@@ -79,10 +79,21 @@ def login(username, password, host, port):
             user["host"] = host
             user["port"] = port
             save_user_data(existing_users)
+
+            # Get number of unread messages
+            db_pathname = get_db_pathname()
+            unread_messages_path = os.path.join(db_pathname, "unread_messages", f"{username}.json")
+            unread_message_count = 0
+            if os.path.exists(unread_messages_path):
+                with open(unread_messages_path, "r") as f:
+                    unread_messages = json.load(f)
+                    unread_message_count = len(unread_messages)
+            
             return {
                 "success": True, 
                 "message": "Login successful.",
-                "command": "server_response"
+                "command": "login_response",
+                "unread_message_count": unread_message_count
             }
       
     return {

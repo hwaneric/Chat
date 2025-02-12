@@ -30,7 +30,6 @@ class ChatApp:
 
         self.root.protocol("WM_DELETE_WINDOW", self.on_closing)
 
-        # threading.Thread(target=self.client.listen_for_messages, args=(self.update_incoming_messages,), daemon=True).start()
 
     def create_login_frame(self):
         tk.Label(self.login_frame, text="Username").grid(row=0, column=0)
@@ -133,11 +132,14 @@ class ChatApp:
     def login(self):
         username = self.username_entry.get()
         password = self.password_entry.get()
-        success, message = self.client.login(username, password)
+        success, message, unread_message_count = self.client.login(username, password)
         if success:
+            print("message", message)
             messagebox.showinfo("Login Successful", message)  
             self.login_frame.pack_forget()
             self.chat_frame.pack()
+            self.incoming_message_list.delete(0, tk.END)
+            self.incoming_message_list.insert(tk.END, f"Welcome {username}! You have {unread_message_count} unread messages.")
             threading.Thread(target=self.client.listen_for_messages, args=(self.update_incoming_messages,), daemon = True).start()
         else: 
             messagebox.showerror("Login Failed", message)
