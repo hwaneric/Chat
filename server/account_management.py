@@ -349,4 +349,3 @@ def fetch_sent_messages(username):
     with open(sent_db_pathname, "r") as f:
         sent_messages = json.load(f)
     return {"success": True, "sent_messages": sent_messages, "message": "Sent messages fetched successfully.", "command": "fetch_sent_messages_response"}
-

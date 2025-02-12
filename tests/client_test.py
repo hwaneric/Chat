@@ -284,10 +284,6 @@ def test_read_success():
         
         success, messages = client.read(1)
         
-        # Print the deserialized data
-        print("Deserialized data:", mock_deserialize.return_value)
-        print("Messages:", messages)
-        
         assert success == True
         assert messages == ["user1 at (03-31-2021, 12:00 AM): Hello!"]
 
