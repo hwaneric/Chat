@@ -229,7 +229,7 @@ class Client:
 
                     # Server closed connection
                     if not recv_data:
-                        print(f"REMOVE THIS PRINT LATER: Closing connection to {sock.getpeername()}")
+                        print(f"In Background Thread: Closing connection to {sock.getpeername()}")
                         self.sel.unregister(sock)
                         sock.close()
 
