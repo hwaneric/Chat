@@ -3,6 +3,7 @@ import os
 import re
 import time
 import uuid
+import bcrypt
 
 USER_DATA_FILE = "user_data.json"
 
@@ -38,9 +39,11 @@ def create_account(username, password, host, port):
             "command": "server_response"
         }
     
+    hashed_password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
+    
     existing_users[username] = {
         "username": username, 
-        "password": password, 
+        "password": hashed_password.decode('utf-8'), 
         "online": True, 
         "host": host, 
         "port": port
@@ -71,7 +74,7 @@ def login(username, password, host, port):
         
     if username_exists(username):
         user = existing_users[username]
-        if user["password"] == password:
+        if bcrypt.checkpw(password.encode('utf-8'), user["password"].encode('utf-8')):
             user["online"] = True
             user["host"] = host
             user["port"] = port
