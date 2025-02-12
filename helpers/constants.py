@@ -21,7 +21,8 @@ COMMANDS_TO_IDS = {
     "list_response": 12,
     "read_response": 13,
     "fetch_sent_messages": 14,
-    "fetch_sent_messages_response": 15
+    "fetch_sent_messages_response": 15,
+    "login_response": 16
 }
 
 IDS_TO_COMMANDS = {
@@ -40,5 +41,6 @@ IDS_TO_COMMANDS = {
     12: "list_response",
     13: "read_response",
     14: "fetch_sent_messages",
-    15: "fetch_sent_messages_response"
+    15: "fetch_sent_messages_response",
+    16: "login_response"
 }

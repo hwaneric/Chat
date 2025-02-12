@@ -56,15 +56,15 @@ class Client:
         sent = write_socket(self.sock, msg_data)
         data = read_socket(self.sock)
         if not data:
-            return False, "Server side error while attempting login. Please try again!"        
+            return False, "Server side error while attempting login. Please try again!", -1     
 
         data = deserialize(data)
 
         if data["success"]:
             self.username = username
-            return True, "Successfully logged in!"
+            return True, "Successfully logged in!", data["unread_message_count"]
         else:
-            return False, data["message"]
+            return False, data["message"], -1
    
     def list(self, username_pattern):
         msg_data = {"command": "list", "username": self.username, "username_pattern": username_pattern}
