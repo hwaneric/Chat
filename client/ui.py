@@ -118,7 +118,7 @@ class ChatApp:
         self.delete_message_list = tk.Listbox(self.delete_message_frame, height=15, width=50)
         self.delete_message_list.pack()
 
-        tk.Label(self.read_frame, text="Message ID to Delete").pack()
+        tk.Label(self.delete_message_frame, text="Message ID to Delete").pack()
         self.delete_messages_entry = tk.Entry(self.delete_message_frame, width=50)
         self.delete_messages_entry.pack()
 
