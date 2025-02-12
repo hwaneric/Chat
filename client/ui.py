@@ -165,7 +165,7 @@ class ChatApp:
             self.login_frame.pack_forget()
             self.chat_frame.pack()
             self.incoming_message_list.delete(0, tk.END)
-            self.incoming_message_list.insert(tk.END, f"Welcome {username}! You have {unread_message_count} unread messages.")
+            self.incoming_message_list.insert(tk.END, f"Welcome {username}! On initial log in, you had {unread_message_count} unread messages.")
             threading.Thread(target=self.client.listen_for_messages, args=(self.update_incoming_messages,), daemon = True).start()
         else: 
             messagebox.showerror("Login Failed", message)
