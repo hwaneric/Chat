@@ -25,3 +25,6 @@ To run the client, traverse to the "client" folder and call:
 python3 client_script.py
 ```
 
+# Additional Documentation
+Additional documentation on this repository and our wire protocol can be found here: https://docs.google.com/document/d/1uMzqMKuS-AzIjxa3oqSrnPpCBMKhggZXnIDdfU5Fjbw/edit?tab=t.0
+
