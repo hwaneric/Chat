@@ -8,8 +8,8 @@ from dotenv import load_dotenv
 import os
 
 load_dotenv()
-HOST = os.getenv("HOST")
-PORT = int(os.getenv("PORT"))
+HOST = os.getenv("SERVER_HOST")
+PORT = int(os.getenv("SERVER_PORT"))
 
 sel = selectors.DefaultSelector()
 print("hostname:", socket.gethostbyname(socket.gethostname()))
