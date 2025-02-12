@@ -1,4 +1,5 @@
 import datetime
+import traceback
 import json
 import selectors
 import threading
@@ -8,10 +9,10 @@ import types
 from dotenv import load_dotenv
 import os
 import readline # Need to import readline to allow inputs to accept string with length > 1048
-from client_socket import attempt_login, attempt_signup
 import sys
 sys.path.append('../')
-from helpers.socket_io import read_socket, write_socket, deserialize
+from helpers.socket_io import read_socket, write_socket
+from helpers.serialization import deserialize
 
 load_dotenv()
 HOST = os.getenv("HOST")
@@ -52,14 +53,11 @@ class Client:
         password = input("Enter password: ")
         msg_data = {"command": "login", "username": username, "password": password}
 
-        print("ABOUT TO WRITE TO SOCKET")
         sent = write_socket(self.sock, msg_data)
         data = read_socket(self.sock)
         if not data:
             print(f"Login Failed. Please try again: Server side error while attempting login. Please try again!")
-        
-        # data = data.decode("utf-8")
-        # data = json.loads(data)
+
         data = deserialize(data)
 
         if data["success"]:
@@ -194,8 +192,9 @@ class Client:
                 print("Server side error while attempting to delete account. Please try again!")
                 return
 
-            data = data.decode("utf-8")
-            data = json.loads(data)
+            data = deserialize(data)
+            # data = data.decode("utf-8")
+            # data = json.loads(data)
             if data["success"]:
                 print(f"Successfully deleted account {self.username}")
                 self.username = None
@@ -203,7 +202,7 @@ class Client:
                 print(f"Failed to delete account: {data['message']}")
         except Exception as e:
             print(f"Error deleting account: {e}")
-    
+            print(traceback.format_exc())    
     def delete_message(self):
         try: 
             print("Selected: Delete Message")
@@ -211,13 +210,29 @@ class Client:
                 print("You are not logged in! Delete message unsuccessful")
                 return
             
-            sent_db_pathname = os.path.join("..", "db", "sent_messages", f"{self.username}.json")
-            if not os.path.exists(sent_db_pathname):
-                print("No sent messages found.")
+            msg_data = {"command": "fetch_sent_messages", "username": self.username}
+            sent = write_socket(self.sock, msg_data)
+            data = read_socket(self.sock)
+
+            if not data:
+                print("Server side error while attempting to fetch sent messages. Please try again!")
                 return
             
-            with open(sent_db_pathname, "r") as f:
-                sent_messages = json.load(f)
+            data = deserialize(data)
+            if not data["success"]:
+                print(f"Failed to fetch sent messages: {data['message']}")
+                return
+            
+            sent_messages = data["sent_messages"]
+
+
+            # sent_db_pathname = os.path.join("..", "db", "sent_messages", f"{self.username}.json")
+            # if not os.path.exists(sent_db_pathname):
+            #     print("No sent messages found.")
+            #     return
+            
+            # with open(sent_db_pathname, "r") as f:
+            #     sent_messages = json.load(f)
 
             print("Sent Messages: ")
             for recipient, messages in sent_messages.items():
@@ -236,14 +251,16 @@ class Client:
                 print("Server side error while attempting to delete message. Please try again!")
                 return
             
-            data = data.decode("utf-8")
-            data = json.loads(data)
+            data = deserialize(data)
+            # data = data.decode("utf-8")
+            # data = json.loads(data)
             if data["success"]:
                 print(f"Successfully deleted message {message_id}")
             else:
                 print(f"Failed to delete message: {data['message']}")
         except Exception as e:
             print(f"Error deleting message: {e}")
+            print(traceback.format_exc())   
     
     def _register_lsock(self):
         '''
@@ -269,6 +286,7 @@ class Client:
 
         if not data:
             print(f"Server side error while attempting to register listening socket for messages. Please try again!")
+            sys.exit(1)
         
         # data = data.decode("utf-8")
         # data = json.loads(data)
@@ -329,50 +347,51 @@ if __name__ == "__main__":
     
 
     try:
-        while True: 
-            if client.username is None:
-                print("Welcome! To login, type '\login'. To signup, type '\signup'")
-                command = input("Enter command: ")
+        # while True: 
+        while client.username is None:
+            print("Welcome! To login, type '\login'. To signup, type '\signup'")
+            command = input("Enter command: ")
 
-                match command:
-                    case "\login":
-                        client.login()
-                    case "\signup":
-                        client.signup()
-                    case _:
-                        print("Invalid command. Please try again")
-                print("\n")
-            else: 
-            # Start background thread to listen for messages
-                messages_thread = threading.Thread(target=client.listen_for_messages, daemon=True)
-                messages_thread.start()
+            match command:
+                case "\login":
+                    client.login()
+                case "\signup":
+                    client.signup()
+                case _:
+                    print("Invalid command. Please try again")
+            print("\n")
 
-                # Login successful, proceeding to chat
-                while client.username:
-                    commands = ["\list", "\message", "\logout", '\delete_message', "\\read", "\delete_account"]
-                    print(f"Welcome {client.username}! Please choose a command:")
-                    for command in commands:
-                        print(command)
+        # else: 
+        # Start background thread to listen for messages
+        messages_thread = threading.Thread(target=client.listen_for_messages, daemon=True)
+        messages_thread.start()
 
-                    command = input("Enter command: ")
+        # Login successful, proceeding to chat
+        while client.username:
+            commands = ["\list", "\message", "\logout", '\delete_message', "\\read", "\delete_account"]
+            print(f"Welcome {client.username}! Please choose a command:")
+            for command in commands:
+                print(command)
 
-                    match command:
-                        case "\list":
-                            client.list()
-                        case "\message":
-                            client.message()
-                        case "\logout":
-                            client.logout()
-                            break
-                        case "\delete_message":
-                            client.delete_message()
-                        case "\\read":
-                            client.read()
-                        case "\delete_account":
-                            client.delete_account()
-                            break
-                        case _:
-                            print("Invalid command. Please try again")
+            command = input("Enter command: ")
+
+            match command:
+                case "\list":
+                    client.list()
+                case "\message":
+                    client.message()
+                case "\logout":
+                    client.logout()
+                    break
+                case "\delete_message":
+                    client.delete_message()
+                case "\\read":
+                    client.read()
+                case "\delete_account":
+                    client.delete_account()
+                    break
+                case _:
+                    print("Invalid command. Please try again")
                 
     except KeyboardInterrupt:
         print("Caught keyboard interrupt, exiting")
