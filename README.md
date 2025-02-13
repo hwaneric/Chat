@@ -14,6 +14,7 @@ SERVER_HOST = "{SERVER HOST HERE}"
 SERVER_PORT = {SERVER PORT HERE}
 CLIENT_HOST = "{CLIENT HOST HERE}"
 ```
+The server host and port should be the host and port that the server is accessible from. The client host should be the host name of the machine that the client is running on.
 
 Once the above configuration steps are complete, you should be able to run the project! To run the server, cd into the server folder and run ```driver.py```. To run the client, cd into the client folder and run ```ui.py```.
 
