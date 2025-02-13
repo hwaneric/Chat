@@ -17,6 +17,9 @@ CLIENT_HOST = "{CLIENT HOST HERE}"
 
 Once the above configuration steps are complete, you should be able to run the project! To run the server, cd into the server folder and run ```driver.py```. To run the client, cd into the client folder and run ```ui.py```.
 
+# Switching Between JSON Mode and Custom Wire Protocol
+To switch between JSON mode and our custom wire protocol, find the helpers.py file in the "helpers" folder. Set the "JSON_MODE" variable to True for JSON mode and False for our custom wire protocol.
+
 # Additional Documentation
 Additional documentation for this project can be found here: https://docs.google.com/document/d/1uMzqMKuS-AzIjxa3oqSrnPpCBMKhggZXnIDdfU5Fjbw/edit?tab=t.0
 
