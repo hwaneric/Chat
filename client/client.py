@@ -14,10 +14,6 @@ sys.path.append('../')
 from helpers.socket_io import read_socket, write_socket
 from helpers.serialization import deserialize
 
-# load_dotenv()
-# HOST = os.getenv("HOST")
-# PORT = int(os.getenv("PORT"))
-
 class Client:
     def __init__(self, server_host, server_port, client_host, username=None):
         self.server_host = server_host
@@ -44,8 +40,7 @@ class Client:
             return False, "Server side error while attempting signup. Please try again!"        
         
         data = deserialize(data)
-        # data = data.decode("utf-8")
-        # data = json.loads(data)
+
         if data["success"]:
             self.username = username
             return True, "Successfully signed up!"
@@ -74,7 +69,6 @@ class Client:
         if not data:
             return False, "Server side error while attempting to list users. Please try again!" 
                
-        # data = json.loads(data.decode("utf-8"))
         data = deserialize(data)
         if data["success"]:
             return True, data["matches"]
@@ -94,7 +88,6 @@ class Client:
         if not data:
             return False, "Server side error while attempting to send message. Please try again!"     
           
-        # data = json.loads(data.decode("utf-8"))
         data = deserialize(data)
         if data["success"]:
             return True, f"Message sent successfully to {target_username}!"
@@ -110,7 +103,6 @@ class Client:
         if not data:
             return False, "Server side error while attempting to logout. Please try again!"  
               
-        # data = json.loads(data.decode("utf-8"))
         data = deserialize(data)
         if data["success"]:
             self.username = None
@@ -125,7 +117,6 @@ class Client:
         if not data:
             return False, "Server side error while attempting to read messages. Please try again!"
         
-        # data = json.loads(data.decode("utf-8"))
         data = deserialize(data)
         if data["success"]:
             messages = []
@@ -211,8 +202,6 @@ class Client:
             print(f"Server side error while attempting to register listening socket for messages. Please try again!")
             sys.exit(1)
         
-        # data = data.decode("utf-8")
-        # data = json.loads(data)
         data = deserialize(data)
 
         if not data["success"]:
@@ -251,8 +240,6 @@ class Client:
 
                     # Server sent message                    
                     else:
-                        # data = recv_data.decode("utf-8")
-                        # data = json.loads(data)
                         data = deserialize(recv_data)
                         message = f"\nNew message from {data['sender']}: {data['message']}"
                         print(message)
