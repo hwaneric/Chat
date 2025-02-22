@@ -1,0 +1,127 @@
+syntax = "proto3";
+
+// package server;
+
+service Server {
+    rpc Signup(UserAuthRequest) returns (StandardServerResponse);
+    rpc Login(UserAuthRequest) returns (UserLoginResponse);
+    rpc Logout(UserLogoutRequest) returns (StandardServerResponse);
+    rpc ListUsernames(ListUsernamesRequest) returns (ListUsernamesResponse);
+    rpc SendMessage(SendMessageRequest) returns (StandardServerResponse);
+    rpc RegisterClient(RegisterClientRequest) returns (StandardServerResponse);
+    rpc ReadMessages(ReadMessagesRequest) returns (ReadMessageResponse);
+    rpc DeleteAccount(DeleteAccountRequest) returns (StandardServerResponse);
+    rpc DeleteMessage(DeleteMessageRequest) returns (StandardServerResponse);
+    rpc FetchSentMessages(FetchSentMessagesRequest) returns (FetchSentMessagesResponse);
+}
+
+message StandardServerResponse {
+    bool success = 1;
+    string message = 2;
+}
+
+message UserAuthRequest {
+    string username = 1;
+    string password = 2;
+    string host = 3;
+    int32 port = 4;
+}
+
+message UserLoginSuccess {
+    bool success = 1;
+    string message = 2;
+    int32 unread_message_count = 3;
+}
+
+message UserLoginResponse {
+    oneof response {
+        UserLoginSuccess login_response = 1;
+        StandardServerResponse login_failure = 2;
+    }
+}
+
+message UserLogoutRequest {
+    string username = 1;
+}
+
+message ListUsernames {
+    bool success = 1;
+    string message = 2;
+    string username_pattern = 3;
+}
+message ListUsernamesRequest {
+    oneof response {
+        ListUsernames list_usernames = 1;
+        StandardServerResponse failure = 2;
+    }
+}
+
+message ListUsernamesResponse {
+    repeated string matches = 1;
+}
+
+message SendMessageRequest {
+    string sender_username = 1;
+    string target_username = 2;
+    int32 timestamp = 3;
+    string message = 4;
+}
+
+// TODO: HAVE NOT DONE ONLINE MESSAGES YET 
+
+message RegisterClientRequest {
+    string username = 1;
+    string host = 2;
+    int32 port = 3; // This may need to be a string?
+}
+
+message ReadMessagesRequest {
+    string username = 1;
+    int32 num_messages = 2;
+}
+
+message UnreadMessage {
+    string message_id = 1;
+    string sender = 2;
+    int32 timestamp = 3;
+    string message = 4;
+}
+
+message ReadMessage {
+    bool success = 1;
+    string message = 2;
+    repeated UnreadMessage messages = 3;
+}
+
+message ReadMessageResponse {
+    oneof response {
+        ReadMessage read_messages = 1;
+        StandardServerResponse failure = 2;
+    }
+}
+
+message DeleteAccountRequest {
+    string username = 1;
+}
+
+message DeleteMessageRequest {
+    string sender_username = 1;
+    string message_id = 2;
+}
+
+message FetchSentMessagesRequest {
+    string username = 1;
+}
+
+message FetchedSentMessages {
+    bool success = 1;
+    string message = 2;
+    repeated UnreadMessage sent_messages = 3;
+}
+
+message FetchSentMessagesResponse {
+    oneof response {
+        FetchedSentMessages sent_messages = 1;
+        StandardServerResponse failure = 2;
+    }
+}

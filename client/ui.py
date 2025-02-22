@@ -270,7 +270,7 @@ class ChatApp:
 if __name__ == "__main__":
     try:
         client = Client(SERVER_HOST, SERVER_PORT, CLIENT_HOST)
-        client.connect()
+        # client.connect()
         root = tk.Tk()
         app = ChatApp(root, client)
         root.mainloop()

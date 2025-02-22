@@ -29,14 +29,12 @@ def create_account(username, password, host, port):
     if not username or not password:
         return {
             "success": False, 
-            "message": "Username and/or password cannot be empty.",
-            "command": "server_response"
+            "message": "Username and/or password cannot be empty."
         }
     if username_exists(username):
         return {
             "success": False, 
             "message": "Username already exists. Please try again.",
-            "command": "server_response"
         }
     
     hashed_password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
@@ -58,7 +56,6 @@ def create_account(username, password, host, port):
     return {
         "success": True, "message": 
         "Account created successfully.",
-        "command": "server_response"
     }
 
 def login(username, password, host, port):
@@ -69,7 +66,6 @@ def login(username, password, host, port):
         return {
             "success": False, 
             "message": "User is already logged in.",
-            "command": "server_response"
         }
         
     if username_exists(username):
@@ -92,14 +88,12 @@ def login(username, password, host, port):
             return {
                 "success": True, 
                 "message": "Login successful.",
-                "command": "login_response",
                 "unread_message_count": unread_message_count
             }
       
     return {
         "success": False, 
         "message": "Incorrect username or password. Please try again.",
-        "command": "server_response"
     }
 
 def logout(username):

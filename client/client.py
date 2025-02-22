@@ -1,8 +1,5 @@
 import datetime
-import traceback
-import json
 import selectors
-import threading
 import time
 import socket
 import types 
@@ -10,7 +7,14 @@ from dotenv import load_dotenv
 import os
 import readline # Need to import readline to allow inputs to accept string with length > 1048
 import sys
+import grpc
+from concurrent import futures
+from client_listener import Client_Listener
 sys.path.append('../')
+import server_pb2
+import server_pb2_grpc
+import client_listener_pb2
+import client_listener_pb2_grpc
 from helpers.socket_io import read_socket, write_socket
 from helpers.serialization import deserialize
 
@@ -19,21 +23,40 @@ class Client:
         self.server_host = server_host
         self.server_port = server_port
         self.client_host = client_host
+        
+        self.channel = grpc.insecure_channel(f"{server_host}:{server_port}")
+        # bind the client and the server
+        self.stub = server_pb2_grpc.ServerStub(self.channel)
+
+
+
         self.sock = None
         self.username = username
         self.sel = selectors.DefaultSelector()
         self.lsock = None
     
-    def connect(self):
-        try:
-            self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            self.sock.connect((self.server_host, self.server_port))
-        except Exception as e:
-            print("Error connecting to server:", e)
-            sys.exit(1)
+    # def connect(self):
+    #     try:
+    #         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    #         self.sock.connect((self.server_host, self.server_port))
+    #     except Exception as e:
+    #         print("Error connecting to server:", e)
+    #         sys.exit(1)
     
     def signup(self, username, password):
-        msg_data = {"command": "signup", "username": username, "password": password}
+        request = {
+            "username": username, 
+            "password": password,
+            "host": self.client_host,
+            "port": 5000    #TODO: FIX THIS PORT
+        }
+        signup_request = server_pb2.UserAuthRequest(**request)
+        print(signup_request)
+        res = self.stub.Signup(signup_request)
+        print(res, res.success, res.message)
+
+        return res.success, res.message
+
         sent = write_socket(self.sock, msg_data)
         data = read_socket(self.sock)
         if not data:
@@ -48,6 +71,49 @@ class Client:
             return False, data["message"]
     
     def login(self, username, password):
+        request = {
+            "username": username, 
+            "password": password,
+            "host": self.client_host,
+            "port": 5000    #TODO: FIX THIS PORT
+        }
+
+        login_request = server_pb2.UserAuthRequest(**request)
+        response = self.stub.Login(login_request)
+        print(response, response.login_response, response.login_failure)
+        if response.login_response:
+            print("HELLOOO?>???", response.login_response)
+            print("end")
+
+        if response.HasField("login_response"):
+            res = response.login_response
+            print(res)
+            return res.success, res.message, res.unread_message_count
+        elif response.HasField("login_failure"):
+            res = response.login_failure
+            print(res)
+            return res.success, res.message
+
+        # if res.HasField("login_response"):
+        #     res = res.login_response
+        #     print(res)
+        #     return res.success, res.message, res.unread_message_count
+        # else:
+        #     res = res.login_failure
+        #     print(res)
+        #     return res.success, res.message
+        # if res.HasField("login_failure"):
+        #     res = res.login_failure
+        #     return res.success, res.message
+        # else:
+        #     res = res.login_response
+        #     return res.success, res.message, res.unread_message_count
+        # if res.logsuccess:
+        #     return res.success, res.message, res.unread_message_count
+        # else:
+        #     return res.success, res.message
+        
+        
         msg_data = {"command": "login", "username": username, "password": password}
         sent = write_socket(self.sock, msg_data)
         data = read_socket(self.sock)
@@ -63,6 +129,14 @@ class Client:
             return False, data["message"], -1
    
     def list(self, username_pattern):
+        request = {"username_pattern": username_pattern}
+        list_request = server_pb2.ListUsernamesRequest(**request)
+        res = self.stub.ListUsernames(list_request)
+        if res.success:
+            return res.success, res.matches
+        else:
+            return res.success, res.message
+        
         msg_data = {"command": "list", "username": self.username, "username_pattern": username_pattern}
         sent = write_socket(self.sock, msg_data)
         data = read_socket(self.sock)
@@ -76,6 +150,14 @@ class Client:
             return False, data["message"]
 
     def message(self, target_username, message):
+        request = {"target_username": target_username, "message": message}
+        message_request = server_pb2.SendMessageRequest(**request)
+        res = self.stub.SendMessage(message_request)
+        return res.success, res.message
+        
+        
+        
+        
         msg_data = {
             "command": "message", 
             "sender_username": self.username,
@@ -176,6 +258,13 @@ class Client:
         else:
             return False, data["message"]
     
+    def _register_listening_server(self):
+        '''
+            Create gRPC server on the client side that listens for messages from
+            the server that must be delivered immediately
+        '''
+        pass
+
     def _register_lsock(self):
         '''
             Register socket to listen for messages from the server that must be
@@ -211,36 +300,51 @@ class Client:
 
     
     def listen_for_messages(self, update_ui_callback):
-        self._register_lsock()
+        server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
+        client_listener_pb2_grpc.add_Client_ListenerServicer_to_server(
+            Client_Listener(update_ui_callback), 
+            server
+        )
+        address = f"{self.client_host}:{0}"
+        port = server.add_insecure_port(address)
+        server.start()
+        print(f"Running server on address")
+        print(f"Bound to port: {port}")
+        server.wait_for_termination()
 
-        while True:
-            events = self.sel.select(timeout=None)
-            for key, mask in events:
-                sock = key.fileobj
+        
 
-                # Accept connection from server
-                if key.data is None:
-                    conn, addr = self.lsock.accept()
-                    print(f"Accepted connection from {addr}")
-                    conn.setblocking(False)
-                    data = types.SimpleNamespace(addr=addr, inb=b"", outb=b"")
-                    events = selectors.EVENT_READ | selectors.EVENT_WRITE
-                    self.sel.register(conn, events, data=data)
-                    continue
+
+        # self._register_lsock()
+
+        # while True:
+        #     events = self.sel.select(timeout=None)
+        #     for key, mask in events:
+        #         sock = key.fileobj
+
+        #         # Accept connection from server
+        #         if key.data is None:
+        #             conn, addr = self.lsock.accept()
+        #             print(f"Accepted connection from {addr}")
+        #             conn.setblocking(False)
+        #             data = types.SimpleNamespace(addr=addr, inb=b"", outb=b"")
+        #             events = selectors.EVENT_READ | selectors.EVENT_WRITE
+        #             self.sel.register(conn, events, data=data)
+        #             continue
                 
-                # Receive message from server 
-                if mask & selectors.EVENT_READ:
-                    recv_data = read_socket(sock)
+        #         # Receive message from server 
+        #         if mask & selectors.EVENT_READ:
+        #             recv_data = read_socket(sock)
 
-                    # Server closed connection
-                    if not recv_data:
-                        print(f"In Background Thread: Closing connection to {sock.getpeername()}")
-                        self.sel.unregister(sock)
-                        sock.close()
+        #             # Server closed connection
+        #             if not recv_data:
+        #                 print(f"In Background Thread: Closing connection to {sock.getpeername()}")
+        #                 self.sel.unregister(sock)
+        #                 sock.close()
 
-                    # Server sent message                    
-                    else:
-                        data = deserialize(recv_data)
-                        message = f"\nNew message from {data['sender']}: {data['message']}"
-                        print(message)
-                        update_ui_callback(message)
+        #             # Server sent message                    
+        #             else:
+        #                 data = deserialize(recv_data)
+        #                 message = f"\nNew message from {data['sender']}: {data['message']}"
+        #                 print(message)
+                        # update_ui_callback(message)

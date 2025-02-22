@@ -1,0 +1,20 @@
+syntax = "proto3";
+
+package client_listener;
+
+// import "server.proto";
+
+service Client_Listener {
+    rpc ReceiveOnlineMessage(OnlineMessage) returns (StandardServerResponse2);
+}
+
+message OnlineMessage {
+    bool success = 1;
+    string message = 2;
+    string sender = 3;
+}
+
+message StandardServerResponse2 {
+    bool success = 1;
+    string message = 2;
+}
