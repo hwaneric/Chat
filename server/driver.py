@@ -62,7 +62,23 @@ class Server(server_pb2_grpc.ServerServicer):
         username_pattern = request.username_pattern
         print("Received list accounts request")
         res = list_accounts(username_pattern)
-        return server_pb2.ListUsernamesResponse(**res)
+        
+        response = server_pb2.ListUsernamesResponse()
+        if res["success"]:
+            usernames = server_pb2.ListUsernames(
+                success=res["success"],
+                message=res["message"],
+                matches=res["matches"]
+            )
+            response.usernames.CopyFrom(usernames)
+        else:
+            failure = server_pb2.StandardServerResponse(
+                success=res["success"],
+                message=res["message"]
+            )
+            response.failure.CopyFrom(failure)
+        
+        return response
     
     def SendMessage(self, request, context):
         sender = request.sender_username
@@ -105,8 +121,24 @@ class Server(server_pb2_grpc.ServerServicer):
         num_messages = request.num_messages
         print(f"Received read messages request from {username}")
         res = read_messages(username, num_messages)
+        print(res)
 
-        return server_pb2.ReadMessagesResponse(**res)
+        response = server_pb2.ReadMessageResponse()
+        if res["success"]:
+            read_message = server_pb2.ReadMessage(
+                success=res["success"],
+                message=res["message"],
+                messages=res["messages"]
+            )
+            response.read_messages.CopyFrom(read_message)
+        else:
+            failure = server_pb2.StandardServerResponse(
+                success=res["success"],
+                message=res["message"]
+            )
+            response.failure.CopyFrom(failure)
+
+        return response
 
     def DeleteAccount(self, request, context):
         username = request.username
@@ -125,11 +157,28 @@ class Server(server_pb2_grpc.ServerServicer):
         res = delete_message(username, message_id)
         return server_pb2.StandardServerResponse(**res)
     
-    def FetchSentMessagesRequest(self, request, context):
+    def FetchSentMessages(self, request, context):
         username = request.username
         print(f"Received fetch sent messages request from {username}")
         res = fetch_sent_messages(username)
-        return server_pb2.FetchSentMessagesResponse(**res)
+        print(res)
+
+        response = server_pb2.FetchSentMessagesResponse()
+        if res["success"]:
+            sent_message = server_pb2.FetchedSentMessages(
+                success=res["success"],
+                message=res["message"],
+                sent_messages=res["sent_messages"]
+            )
+            print(sent_message)
+            response.sent_messages.CopyFrom(sent_message)
+        else:
+            failure = server_pb2.StandardServerResponse(
+                success=res["success"],
+                message=res["message"]
+            )
+            response.failure.CopyFrom(failure)
+        return response
 
 
 def serve():

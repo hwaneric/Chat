@@ -47,17 +47,17 @@ message UserLogoutRequest {
 message ListUsernames {
     bool success = 1;
     string message = 2;
-    string username_pattern = 3;
+    repeated string matches = 3;
 }
 message ListUsernamesRequest {
-    oneof response {
-        ListUsernames list_usernames = 1;
-        StandardServerResponse failure = 2;
-    }
+    string username_pattern = 1;
 }
 
 message ListUsernamesResponse {
-    repeated string matches = 1;
+    oneof response {
+        ListUsernames usernames = 1;
+        StandardServerResponse failure = 2;
+    }
 }
 
 message SendMessageRequest {

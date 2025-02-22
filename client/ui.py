@@ -206,6 +206,7 @@ class ChatApp:
         if not num_messages.isdigit():
             messagebox.showerror("Invalid Input", "Number of messages must be an integer")
             return
+        num_messages = int(num_messages)
         success, response = self.client.read(num_messages)
         if success:
             if not response:
@@ -252,6 +253,8 @@ class ChatApp:
             messagebox.showerror("Logout Failed", response)
 
     def delete_account(self):
+        if not self.client.username:
+            return False, "You are not logged in! Delete account unsuccessful"
         success, response = self.client.delete_account()
         if success:
             messagebox.showinfo("Delete Account Successful", response)

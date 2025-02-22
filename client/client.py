@@ -54,6 +54,8 @@ class Client:
         print(signup_request)
         res = self.stub.Signup(signup_request)
         print(res, res.success, res.message)
+        if res.success:
+            self.username = username
 
         return res.success, res.message
     
@@ -80,14 +82,19 @@ class Client:
             return res.success, res.message, -1
    
     def list(self, username_pattern):
-        request = {"username_pattern": username_pattern}
+        request = {
+            "username_pattern": username_pattern
+        }
         list_request = server_pb2.ListUsernamesRequest(**request)
-        res = self.stub.ListUsernames(list_request)
-        if res.success:
+        response = self.stub.ListUsernames(list_request)
+
+        if response.HasField("usernames"):
+            res = response.usernames
             return res.success, res.matches
         else:
+            res = response.failure
             return res.success, res.message
-        
+
         msg_data = {"command": "list", "username": self.username, "username_pattern": username_pattern}
         sent = write_socket(self.sock, msg_data)
         data = read_socket(self.sock)
@@ -132,7 +139,19 @@ class Client:
         else:
             return False, data["message"]
     
-    def logout(self):
+    def logout(self):        
+        request = {
+            "username": self.username
+        }
+        logout_request = server_pb2.UserLogoutRequest(**request)
+        res = self.stub.Logout(logout_request)
+        print(res)
+        if res.success:
+            self.username = None
+            return res.success, res.message
+        else:
+            return res.success, res.message
+        
         if not self.username:
             return False, "You are not logged in! Logout unsuccessful"
         msg_data = {"command": "logout", "username": self.username}
@@ -149,6 +168,25 @@ class Client:
             return False, data["message"]
     
     def read(self, num_messages):
+        request = {
+            "username": self.username,
+            "num_messages": num_messages
+        }
+        read_request = server_pb2.ReadMessagesRequest(**request)
+        response = self.stub.ReadMessages(read_request)
+
+        if response.HasField("read_messages"):
+            res = response.read_messages
+            messages = []
+            for message in res.messages:
+                dt = datetime.datetime.fromtimestamp(message.timestamp)
+                readable_time = dt.strftime("%m-%d-%Y, %I:%M %p")
+                messages.append(f"{message.sender} at ({readable_time}): {message.message}")
+            return res.success, messages
+        else:
+            res = response.failure
+            return res.success, res.message
+        
         msg_data = {"command": "read", "username": self.username, "num_messages": num_messages}
         sent = write_socket(self.sock, msg_data)
         data = read_socket(self.sock)
@@ -167,6 +205,18 @@ class Client:
             return False, data["message"]
 
     def delete_account(self):
+        request = {
+            "username": self.username
+            }
+        delete_account_request = server_pb2.DeleteAccountRequest(**request)
+        res = self.stub.DeleteAccount(delete_account_request)
+
+        if res.success:
+            self.username = None
+            return res.success, res.message
+        else:
+            return res.success, res.message
+        
         if not self.username:
             return False, "You are not logged in! Delete account unsuccessful"
         msg_data = {"command": "delete_account", "username": self.username}
@@ -184,6 +234,29 @@ class Client:
             return False, data["message"]
         
     def fetch_sent_messages(self):
+        request = {
+            "username": self.username
+        }
+        fetch_sent_messages_request = server_pb2.FetchSentMessagesRequest(**request)
+        response = self.stub.FetchSentMessages(fetch_sent_messages_request)
+        
+        if response.HasField("sent_messages"):
+            res = response.sent_messages
+            sent_messages = {}
+            for msg in response.messages:
+                if msg.recipient not in sent_messages:
+                    sent_messages[msg.recipient] = []
+                sent_messages[msg.recipient].append({
+                    "message_id": msg.message_id,
+                    "message": msg.message,
+                    "timestamp": msg.timestamp
+                })
+            return res.success, sent_messages
+        else:
+            res = response.failure
+            return res.success, res.message
+        
+        
         if not self.username:
             return False, "You are not logged in! Fetch sent messages unsuccessful"
         msg_data = {"command": "fetch_sent_messages", "username": self.username}
