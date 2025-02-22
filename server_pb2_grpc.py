@@ -26,9 +26,7 @@ if _version_not_supported:
 
 
 class ServerStub(object):
-    """package server;
-
-    """
+    """Missing associated documentation comment in .proto file."""
 
     def __init__(self, channel):
         """Constructor.
@@ -37,61 +35,59 @@ class ServerStub(object):
             channel: A grpc.Channel.
         """
         self.Signup = channel.unary_unary(
-                '/Server/Signup',
+                '/server.Server/Signup',
                 request_serializer=server__pb2.UserAuthRequest.SerializeToString,
                 response_deserializer=server__pb2.StandardServerResponse.FromString,
                 _registered_method=True)
         self.Login = channel.unary_unary(
-                '/Server/Login',
+                '/server.Server/Login',
                 request_serializer=server__pb2.UserAuthRequest.SerializeToString,
                 response_deserializer=server__pb2.UserLoginResponse.FromString,
                 _registered_method=True)
         self.Logout = channel.unary_unary(
-                '/Server/Logout',
+                '/server.Server/Logout',
                 request_serializer=server__pb2.UserLogoutRequest.SerializeToString,
                 response_deserializer=server__pb2.StandardServerResponse.FromString,
                 _registered_method=True)
         self.ListUsernames = channel.unary_unary(
-                '/Server/ListUsernames',
+                '/server.Server/ListUsernames',
                 request_serializer=server__pb2.ListUsernamesRequest.SerializeToString,
                 response_deserializer=server__pb2.ListUsernamesResponse.FromString,
                 _registered_method=True)
         self.SendMessage = channel.unary_unary(
-                '/Server/SendMessage',
+                '/server.Server/SendMessage',
                 request_serializer=server__pb2.SendMessageRequest.SerializeToString,
                 response_deserializer=server__pb2.StandardServerResponse.FromString,
                 _registered_method=True)
         self.RegisterClient = channel.unary_unary(
-                '/Server/RegisterClient',
+                '/server.Server/RegisterClient',
                 request_serializer=server__pb2.RegisterClientRequest.SerializeToString,
                 response_deserializer=server__pb2.StandardServerResponse.FromString,
                 _registered_method=True)
         self.ReadMessages = channel.unary_unary(
-                '/Server/ReadMessages',
+                '/server.Server/ReadMessages',
                 request_serializer=server__pb2.ReadMessagesRequest.SerializeToString,
                 response_deserializer=server__pb2.ReadMessageResponse.FromString,
                 _registered_method=True)
         self.DeleteAccount = channel.unary_unary(
-                '/Server/DeleteAccount',
+                '/server.Server/DeleteAccount',
                 request_serializer=server__pb2.DeleteAccountRequest.SerializeToString,
                 response_deserializer=server__pb2.StandardServerResponse.FromString,
                 _registered_method=True)
         self.DeleteMessage = channel.unary_unary(
-                '/Server/DeleteMessage',
+                '/server.Server/DeleteMessage',
                 request_serializer=server__pb2.DeleteMessageRequest.SerializeToString,
                 response_deserializer=server__pb2.StandardServerResponse.FromString,
                 _registered_method=True)
         self.FetchSentMessages = channel.unary_unary(
-                '/Server/FetchSentMessages',
+                '/server.Server/FetchSentMessages',
                 request_serializer=server__pb2.FetchSentMessagesRequest.SerializeToString,
                 response_deserializer=server__pb2.FetchSentMessagesResponse.FromString,
                 _registered_method=True)
 
 
 class ServerServicer(object):
-    """package server;
-
-    """
+    """Missing associated documentation comment in .proto file."""
 
     def Signup(self, request, context):
         """Missing associated documentation comment in .proto file."""
@@ -208,16 +204,14 @@ def add_ServerServicer_to_server(servicer, server):
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
-            'Server', rpc_method_handlers)
+            'server.Server', rpc_method_handlers)
     server.add_generic_rpc_handlers((generic_handler,))
-    server.add_registered_method_handlers('Server', rpc_method_handlers)
+    server.add_registered_method_handlers('server.Server', rpc_method_handlers)
 
 
  # This class is part of an EXPERIMENTAL API.
 class Server(object):
-    """package server;
-
-    """
+    """Missing associated documentation comment in .proto file."""
 
     @staticmethod
     def Signup(request,
@@ -233,7 +227,7 @@ class Server(object):
         return grpc.experimental.unary_unary(
             request,
             target,
-            '/Server/Signup',
+            '/server.Server/Signup',
             server__pb2.UserAuthRequest.SerializeToString,
             server__pb2.StandardServerResponse.FromString,
             options,
@@ -260,7 +254,7 @@ class Server(object):
         return grpc.experimental.unary_unary(
             request,
             target,
-            '/Server/Login',
+            '/server.Server/Login',
             server__pb2.UserAuthRequest.SerializeToString,
             server__pb2.UserLoginResponse.FromString,
             options,
@@ -287,7 +281,7 @@ class Server(object):
         return grpc.experimental.unary_unary(
             request,
             target,
-            '/Server/Logout',
+            '/server.Server/Logout',
             server__pb2.UserLogoutRequest.SerializeToString,
             server__pb2.StandardServerResponse.FromString,
             options,
@@ -314,7 +308,7 @@ class Server(object):
         return grpc.experimental.unary_unary(
             request,
             target,
-            '/Server/ListUsernames',
+            '/server.Server/ListUsernames',
             server__pb2.ListUsernamesRequest.SerializeToString,
             server__pb2.ListUsernamesResponse.FromString,
             options,
@@ -341,7 +335,7 @@ class Server(object):
         return grpc.experimental.unary_unary(
             request,
             target,
-            '/Server/SendMessage',
+            '/server.Server/SendMessage',
             server__pb2.SendMessageRequest.SerializeToString,
             server__pb2.StandardServerResponse.FromString,
             options,
@@ -368,7 +362,7 @@ class Server(object):
         return grpc.experimental.unary_unary(
             request,
             target,
-            '/Server/RegisterClient',
+            '/server.Server/RegisterClient',
             server__pb2.RegisterClientRequest.SerializeToString,
             server__pb2.StandardServerResponse.FromString,
             options,
@@ -395,7 +389,7 @@ class Server(object):
         return grpc.experimental.unary_unary(
             request,
             target,
-            '/Server/ReadMessages',
+            '/server.Server/ReadMessages',
             server__pb2.ReadMessagesRequest.SerializeToString,
             server__pb2.ReadMessageResponse.FromString,
             options,
@@ -422,7 +416,7 @@ class Server(object):
         return grpc.experimental.unary_unary(
             request,
             target,
-            '/Server/DeleteAccount',
+            '/server.Server/DeleteAccount',
             server__pb2.DeleteAccountRequest.SerializeToString,
             server__pb2.StandardServerResponse.FromString,
             options,
@@ -449,7 +443,7 @@ class Server(object):
         return grpc.experimental.unary_unary(
             request,
             target,
-            '/Server/DeleteMessage',
+            '/server.Server/DeleteMessage',
             server__pb2.DeleteMessageRequest.SerializeToString,
             server__pb2.StandardServerResponse.FromString,
             options,
@@ -476,7 +470,7 @@ class Server(object):
         return grpc.experimental.unary_unary(
             request,
             target,
-            '/Server/FetchSentMessages',
+            '/server.Server/FetchSentMessages',
             server__pb2.FetchSentMessagesRequest.SerializeToString,
             server__pb2.FetchSentMessagesResponse.FromString,
             options,

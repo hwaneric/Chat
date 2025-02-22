@@ -4,6 +4,7 @@ import grpc
 import warnings
 
 import client_listener_pb2 as client__listener__pb2
+import server_pb2 as server__pb2
 
 GRPC_GENERATED_VERSION = '1.70.0'
 GRPC_VERSION = grpc.__version__
@@ -26,9 +27,7 @@ if _version_not_supported:
 
 
 class Client_ListenerStub(object):
-    """import "server.proto";
-
-    """
+    """Missing associated documentation comment in .proto file."""
 
     def __init__(self, channel):
         """Constructor.
@@ -36,19 +35,28 @@ class Client_ListenerStub(object):
         Args:
             channel: A grpc.Channel.
         """
-        self.ReceiveOnlineMessage = channel.unary_unary(
-                '/client_listener.Client_Listener/ReceiveOnlineMessage',
+        self.SendOnlineMessage = channel.unary_unary(
+                '/client_listener.Client_Listener/SendOnlineMessage',
                 request_serializer=client__listener__pb2.OnlineMessage.SerializeToString,
-                response_deserializer=client__listener__pb2.StandardServerResponse2.FromString,
+                response_deserializer=server__pb2.StandardServerResponse.FromString,
+                _registered_method=True)
+        self.SendOnlineMessageResponse = channel.unary_unary(
+                '/client_listener.Client_Listener/SendOnlineMessageResponse',
+                request_serializer=server__pb2.StandardServerResponse.SerializeToString,
+                response_deserializer=client__listener__pb2.OnlineMessage.FromString,
                 _registered_method=True)
 
 
 class Client_ListenerServicer(object):
-    """import "server.proto";
+    """Missing associated documentation comment in .proto file."""
 
-    """
+    def SendOnlineMessage(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
 
-    def ReceiveOnlineMessage(self, request, context):
+    def SendOnlineMessageResponse(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -57,10 +65,15 @@ class Client_ListenerServicer(object):
 
 def add_Client_ListenerServicer_to_server(servicer, server):
     rpc_method_handlers = {
-            'ReceiveOnlineMessage': grpc.unary_unary_rpc_method_handler(
-                    servicer.ReceiveOnlineMessage,
+            'SendOnlineMessage': grpc.unary_unary_rpc_method_handler(
+                    servicer.SendOnlineMessage,
                     request_deserializer=client__listener__pb2.OnlineMessage.FromString,
-                    response_serializer=client__listener__pb2.StandardServerResponse2.SerializeToString,
+                    response_serializer=server__pb2.StandardServerResponse.SerializeToString,
+            ),
+            'SendOnlineMessageResponse': grpc.unary_unary_rpc_method_handler(
+                    servicer.SendOnlineMessageResponse,
+                    request_deserializer=server__pb2.StandardServerResponse.FromString,
+                    response_serializer=client__listener__pb2.OnlineMessage.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -71,12 +84,10 @@ def add_Client_ListenerServicer_to_server(servicer, server):
 
  # This class is part of an EXPERIMENTAL API.
 class Client_Listener(object):
-    """import "server.proto";
-
-    """
+    """Missing associated documentation comment in .proto file."""
 
     @staticmethod
-    def ReceiveOnlineMessage(request,
+    def SendOnlineMessage(request,
             target,
             options=(),
             channel_credentials=None,
@@ -89,9 +100,36 @@ class Client_Listener(object):
         return grpc.experimental.unary_unary(
             request,
             target,
-            '/client_listener.Client_Listener/ReceiveOnlineMessage',
+            '/client_listener.Client_Listener/SendOnlineMessage',
             client__listener__pb2.OnlineMessage.SerializeToString,
-            client__listener__pb2.StandardServerResponse2.FromString,
+            server__pb2.StandardServerResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def SendOnlineMessageResponse(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/client_listener.Client_Listener/SendOnlineMessageResponse',
+            server__pb2.StandardServerResponse.SerializeToString,
+            client__listener__pb2.OnlineMessage.FromString,
             options,
             channel_credentials,
             insecure,

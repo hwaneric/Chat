@@ -5,6 +5,8 @@ import sys
 sys.path.append('../')
 import server_pb2
 import server_pb2_grpc
+import client_listener_pb2
+import client_listener_pb2_grpc
 from account_management import check_if_online, create_account, fetch_sent_messages, list_accounts, login, logout, read_messages, send_offline_message, delete_account, delete_message
 
 from dotenv import load_dotenv
@@ -15,7 +17,7 @@ PORT = int(os.getenv("SERVER_PORT"))
 
 class Server(server_pb2_grpc.ServerServicer):
     def __init__(self):
-        self.address_map = {} 
+        self.stub_map = {} 
     
     def Signup(self, request, context):
         username = request.username
@@ -38,43 +40,21 @@ class Server(server_pb2_grpc.ServerServicer):
         server_response = server_pb2.UserLoginResponse() 
         if res["success"]:
             print(res)
-            # Correctly assign the success response
-            server_response.login_response.success = True
-            server_response.login_response.login_response.message = res["message"]
-            server_response.login_response.unread_message_count = res["unread_message_count"]
-            # user_login_success = server_pb2.UserLoginSuccess(**res)  # create UserLoginSuccess
-            # server_response.login_response.CopyFrom(user_login_success)  # assign to login_response
+            user_login_success = server_pb2.UserLoginSuccess(**res)  # create UserLoginSuccess
+            server_response.login_response.CopyFrom(user_login_success)  # assign to login_response
         else:
             print(res)
-            server_response.login_failure.success = False
-            server_response.login_failure.message = res["message"]
-            # Correctly assign the failure response
-            # standard_server_response = server_pb2.StandardServerResponse(**res)  # create StandardServerResponse
-            # server_response.login_failure.CopyFrom(standard_server_response)  # assign to login_failure
-
-        # if res["success"]:
-        #     print(res)
-        #     server_response.login_response(**res)
-        #     # response = server_pb2.UserLoginResponse(login_response=server_pb2.UserLoginSuccess(**res))
-        # else:
-        #     # server_response.login_failure.success = False
-        #     # server_response.login_failure.message = res["message"]
-        #     print(res)
-        #     server_response.login_failure(**res)
-    
-            # response = server_pb2.UserLoginResponse(login_failure=server_pb2.StandardServerResponse(success = True, message = res["message"]))
-        print(server_response)
+            standard_server_response = server_pb2.StandardServerResponse(**res)  # create StandardServerResponse
+            server_response.login_failure.CopyFrom(standard_server_response)  # assign to login_response
         return server_response
-        # res = server_pb2.UserLoginSuccess(**res)
-        # return server_pb2.UserLoginResponse(response=res)
-    
+      
     def Logout(self, request, context):
         username = request.username
         print(f"Received logout request from {username}")
         res = logout(username)
 
-        if username in self.address_map:
-            del self.address_map[username]
+        if username in self.stub_map:
+            del self.stub_map[username]
 
         return server_pb2.StandardServerResponse(**res)
 
@@ -90,11 +70,20 @@ class Server(server_pb2_grpc.ServerServicer):
         message = request.message
         timestamp = request.timestamp
         print(f"Received message from {sender} to {target}")
+        print(f"Stub Map: {self.stub_map}")
 
         target_logged_in = check_if_online(target)
-        if target_logged_in and target in self.address_map:
-            #TODO: Implement online messages
-            pass
+        if target_logged_in and target in self.stub_map:
+            print("Target is online, sending online message")
+
+            stub = self.stub_map[target]
+            res = {"success": True, "message": message, "sender": sender}
+            online_message = client_listener_pb2.OnlineMessage(**res)
+            stub.SendOnlineMessage(online_message)
+
+            # TODO: Handle if online message fails to send
+            return server_pb2.StandardServerResponse(success=True, message="Message sent successfully")
+
         else:
             res = send_offline_message(target, sender, message, timestamp)
             return server_pb2.StandardServerResponse(**res)
@@ -103,9 +92,12 @@ class Server(server_pb2_grpc.ServerServicer):
         username = request.username
         host = request.host
         port = request.port
+
+        channel = grpc.insecure_channel(f"{host}:{port}")
+        stub = client_listener_pb2_grpc.Client_ListenerStub(channel)
         print(f"Received register client request from {username}")
 
-        self.address_map[username] = (host, port)
+        self.stub_map[username] = stub
         return server_pb2.StandardServerResponse(success=True, message= "Registered successfully")
 
     def ReadMessages(self, request, context):
@@ -121,8 +113,8 @@ class Server(server_pb2_grpc.ServerServicer):
         print(f"Received delete account request from {username}")
         res = delete_account(username)
 
-        if username in self.address_map:
-            del self.address_map[username]
+        if username in self.stub_map:
+            del self.stub_map[username]
         
         return server_pb2.StandardServerResponse(**res)
 

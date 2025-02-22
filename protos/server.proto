@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-// package server;
+package server;
 
 service Server {
     rpc Signup(UserAuthRequest) returns (StandardServerResponse);

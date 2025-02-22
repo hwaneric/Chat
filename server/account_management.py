@@ -108,13 +108,11 @@ def logout(username):
         return {
             "success": True, 
             "message": "Logout successful.",
-            "command": "server_response"
         }
       
     return {
         "success": False, 
         "message": "Username does not exist.",
-        "command": "server_response"
     }
 
 def list_accounts(username_pattern):
@@ -125,13 +123,11 @@ def list_accounts(username_pattern):
             "success": True, 
             "message": "Accounts listed successfully.", 
             "matches": matching_users,
-            "command": "list_response"
             }
     except re.PatternError:
         return {
             "success": False, 
             "message": "Invalid regex pattern.",
-            "command": "server_response"
         }
 
 def send_offline_message(target_username, sender_username, message, timestamp):
@@ -148,7 +144,6 @@ def send_offline_message(target_username, sender_username, message, timestamp):
         return {
             "success": False, 
             "message": "Target user does not exist.", 
-            "command": "server_response"
         }
 
     new_message = {"message_id": message_id, "message": message, "sender": sender_username, "timestamp": timestamp}
@@ -187,7 +182,6 @@ def send_offline_message(target_username, sender_username, message, timestamp):
     return {
         "success": True, 
         "message": "Message sent successfully.",
-        "command": "server_response"
     }
 
 def read_messages(username, num_messages):
@@ -199,7 +193,6 @@ def read_messages(username, num_messages):
         return {
             "success": False, 
             "message": "Target user does not exist.",
-            "command": "server_response"
         }
 
     with open(target_db_pathname, "r") as f:
@@ -226,7 +219,6 @@ def read_messages(username, num_messages):
         "success": True,
         "message": "Messages read successfully.",
         "messages": unread_messages[:num_messages],
-        "command": "read_response"
     }
     return return_data
 
@@ -261,7 +253,6 @@ def delete_account(username):
         return {
             "success": False, 
             "message": "Username does not exist.",
-            "command": "server_response"
         }
     
     if existing_users[username]["online"]:
@@ -280,13 +271,11 @@ def delete_account(username):
         return {
             "success": True, 
             "message": "Account deleted successfully.",
-            "command": "server_response"
         }
     
     return {
         "success": False, 
         "message": "Attempting to delete offline account.",
-        "command": "server_response"
     }
     
 def delete_message(username, message_id):
@@ -295,7 +284,7 @@ def delete_message(username, message_id):
     # Load the user's sent messages
     sent_db_pathname = os.path.join(db_pathname, "sent_messages", f"{username}.json")
     if not os.path.exists(sent_db_pathname):
-        return {"success": False, "message": "No sent messages found.", "command": "server_response"}
+        return {"success": False, "message": "No sent messages found."}
     
     with open(sent_db_pathname, "r") as f:
         sent_messages = json.load(f)
@@ -311,7 +300,7 @@ def delete_message(username, message_id):
             break
 
     if not target_username: 
-        return {"success": False, "message": "Message ID not found.", "command": "server_response"}
+        return {"success": False, "message": "Message ID not found."}
     
     # Remove message from sent_messages
     sent_messages[target_username] = [msg for msg in sent_messages[target_username] if msg["message_id"] != message_id]
@@ -321,8 +310,7 @@ def delete_message(username, message_id):
     # Load the target user's unread messages
     target_db_pathname = os.path.join(db_pathname, "unread_messages", f"{target_username}.json")
     if not os.path.exists(target_db_pathname):
-        return {"success": False, "message": "Target user does not exist.", "command": "server_response"}
-    
+        return {"success": False, "message": "Target user does not exist."}
     with open(target_db_pathname, "r") as f:
         unread_messages = json.load(f)
 
@@ -331,16 +319,16 @@ def delete_message(username, message_id):
     with open(target_db_pathname, "w") as f:
         json.dump(unread_messages, f)
 
-    return {"success": True, "message": "Message deleted successfully.", "command": "server_response"}
+    return {"success": True, "message": "Message deleted successfully."}
 
 
 def fetch_sent_messages(username):
     db_pathname = get_db_pathname()
     sent_db_pathname = os.path.join(db_pathname, "sent_messages", f"{username}.json")
     if not os.path.exists(sent_db_pathname):
-        return {"success": False, "message": "No sent messages found.", "command": "server_response"}
+        return {"success": False, "message": "No sent messages found."}
 
     with open(sent_db_pathname, "r") as f:
         sent_messages = json.load(f)
-    return {"success": True, "sent_messages": sent_messages, "message": "Sent messages fetched successfully.", "command": "fetch_sent_messages_response"}
+    return {"success": True, "sent_messages": sent_messages, "message": "Sent messages fetched successfully."}
 

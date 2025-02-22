@@ -2,10 +2,11 @@ syntax = "proto3";
 
 package client_listener;
 
-// import "server.proto";
+import "server.proto";
 
 service Client_Listener {
-    rpc ReceiveOnlineMessage(OnlineMessage) returns (StandardServerResponse2);
+    rpc SendOnlineMessage(OnlineMessage) returns (server.StandardServerResponse);
+    rpc SendOnlineMessageResponse(server.StandardServerResponse) returns (OnlineMessage);
 }
 
 message OnlineMessage {
@@ -14,7 +15,7 @@ message OnlineMessage {
     string sender = 3;
 }
 
-message StandardServerResponse2 {
-    bool success = 1;
-    string message = 2;
-}
+// message server.StandardServerResponse {
+//     bool success = 1;
+//     string message = 2;
+// }

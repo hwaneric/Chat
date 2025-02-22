@@ -22,19 +22,18 @@ _runtime_version.ValidateProtobufRuntimeVersion(
 _sym_db = _symbol_database.Default()
 
 
+import server_pb2 as server__pb2
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x15\x63lient_listener.proto\x12\x0f\x63lient_listener\"A\n\rOnlineMessage\x12\x0f\n\x07success\x18\x01 \x01(\x08\x12\x0f\n\x07message\x18\x02 \x01(\t\x12\x0e\n\x06sender\x18\x03 \x01(\t\";\n\x17StandardServerResponse2\x12\x0f\n\x07success\x18\x01 \x01(\x08\x12\x0f\n\x07message\x18\x02 \x01(\t2s\n\x0f\x43lient_Listener\x12`\n\x14ReceiveOnlineMessage\x12\x1e.client_listener.OnlineMessage\x1a(.client_listener.StandardServerResponse2b\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x15\x63lient_listener.proto\x12\x0f\x63lient_listener\x1a\x0cserver.proto\"A\n\rOnlineMessage\x12\x0f\n\x07success\x18\x01 \x01(\x08\x12\x0f\n\x07message\x18\x02 \x01(\t\x12\x0e\n\x06sender\x18\x03 \x01(\t2\xc3\x01\n\x0f\x43lient_Listener\x12S\n\x11SendOnlineMessage\x12\x1e.client_listener.OnlineMessage\x1a\x1e.server.StandardServerResponse\x12[\n\x19SendOnlineMessageResponse\x12\x1e.server.StandardServerResponse\x1a\x1e.client_listener.OnlineMessageb\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
 _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'client_listener_pb2', _globals)
 if not _descriptor._USE_C_DESCRIPTORS:
   DESCRIPTOR._loaded_options = None
-  _globals['_ONLINEMESSAGE']._serialized_start=42
-  _globals['_ONLINEMESSAGE']._serialized_end=107
-  _globals['_STANDARDSERVERRESPONSE2']._serialized_start=109
-  _globals['_STANDARDSERVERRESPONSE2']._serialized_end=168
-  _globals['_CLIENT_LISTENER']._serialized_start=170
-  _globals['_CLIENT_LISTENER']._serialized_end=285
+  _globals['_ONLINEMESSAGE']._serialized_start=56
+  _globals['_ONLINEMESSAGE']._serialized_end=121
+  _globals['_CLIENT_LISTENER']._serialized_start=124
+  _globals['_CLIENT_LISTENER']._serialized_end=319
 # @@protoc_insertion_point(module_scope)

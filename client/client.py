@@ -56,19 +56,6 @@ class Client:
         print(res, res.success, res.message)
 
         return res.success, res.message
-
-        sent = write_socket(self.sock, msg_data)
-        data = read_socket(self.sock)
-        if not data:
-            return False, "Server side error while attempting signup. Please try again!"        
-        
-        data = deserialize(data)
-
-        if data["success"]:
-            self.username = username
-            return True, "Successfully signed up!"
-        else:
-            return False, data["message"]
     
     def login(self, username, password):
         request = {
@@ -81,52 +68,16 @@ class Client:
         login_request = server_pb2.UserAuthRequest(**request)
         response = self.stub.Login(login_request)
         print(response, response.login_response, response.login_failure)
-        if response.login_response:
-            print("HELLOOO?>???", response.login_response)
-            print("end")
 
         if response.HasField("login_response"):
             res = response.login_response
             print(res)
-            return res.success, res.message, res.unread_message_count
-        elif response.HasField("login_failure"):
-            res = response.login_failure
-            print(res)
-            return res.success, res.message
-
-        # if res.HasField("login_response"):
-        #     res = res.login_response
-        #     print(res)
-        #     return res.success, res.message, res.unread_message_count
-        # else:
-        #     res = res.login_failure
-        #     print(res)
-        #     return res.success, res.message
-        # if res.HasField("login_failure"):
-        #     res = res.login_failure
-        #     return res.success, res.message
-        # else:
-        #     res = res.login_response
-        #     return res.success, res.message, res.unread_message_count
-        # if res.logsuccess:
-        #     return res.success, res.message, res.unread_message_count
-        # else:
-        #     return res.success, res.message
-        
-        
-        msg_data = {"command": "login", "username": username, "password": password}
-        sent = write_socket(self.sock, msg_data)
-        data = read_socket(self.sock)
-        if not data:
-            return False, "Server side error while attempting login. Please try again!", -1     
-
-        data = deserialize(data)
-
-        if data["success"]:
             self.username = username
-            return True, "Successfully logged in!", data["unread_message_count"]
+            return res.success, res.message, res.unread_message_count
         else:
-            return False, data["message"], -1
+            res = response.login_failure
+            print("failed:", res)
+            return res.success, res.message, -1
    
     def list(self, username_pattern):
         request = {"username_pattern": username_pattern}
@@ -150,7 +101,12 @@ class Client:
             return False, data["message"]
 
     def message(self, target_username, message):
-        request = {"target_username": target_username, "message": message}
+        request = {
+            "sender_username": self.username, 
+            "target_username": target_username, 
+            "timestamp": int(time.time()),
+            "message": message
+        }
         message_request = server_pb2.SendMessageRequest(**request)
         res = self.stub.SendMessage(message_request)
         return res.success, res.message
@@ -310,6 +266,17 @@ class Client:
         server.start()
         print(f"Running server on address")
         print(f"Bound to port: {port}")
+
+        # Register Client Listener with Server
+        request = {
+            "username": self.username,
+            "host": self.client_host,
+            "port": port
+        }
+        register_listener_request = server_pb2.RegisterClientRequest(**request)
+        res = self.stub.RegisterClient(register_listener_request)
+        print(res)
+
         server.wait_for_termination()
 
         
