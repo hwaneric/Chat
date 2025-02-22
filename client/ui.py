@@ -282,4 +282,3 @@ if __name__ == "__main__":
     finally:
         if client.username:
             client.logout()
-        client.sock.close()

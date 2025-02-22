@@ -243,14 +243,17 @@ class Client:
         if response.HasField("sent_messages"):
             res = response.sent_messages
             sent_messages = {}
-            for msg in response.messages:
-                if msg.recipient not in sent_messages:
-                    sent_messages[msg.recipient] = []
-                sent_messages[msg.recipient].append({
-                    "message_id": msg.message_id,
-                    "message": msg.message,
-                    "timestamp": msg.timestamp
-                })
+            print("Responseeeeee:", res)
+            for msg in res.sent_messages:
+                if msg.target_username not in sent_messages:
+                    sent_messages[msg.target_username] = []
+
+                for message in msg.messages:
+                    sent_messages[msg.target_username].append({
+                        "message_id": message.message_id,
+                        "message": message.message,
+                        "timestamp": message.timestamp
+                    })
             return res.success, sent_messages
         else:
             res = response.failure

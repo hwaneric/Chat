@@ -113,10 +113,16 @@ message FetchSentMessagesRequest {
     string username = 1;
 }
 
+// Maps a target_username to all unread messages sent to that user
+message SentMessages {
+    string target_username = 1;
+    repeated UnreadMessage messages = 2;
+}
+
 message FetchedSentMessages {
     bool success = 1;
     string message = 2;
-    repeated UnreadMessage sent_messages = 3;
+    repeated SentMessages sent_messages = 3;
 }
 
 message FetchSentMessagesResponse {

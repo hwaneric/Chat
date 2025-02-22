@@ -7,7 +7,7 @@ import server_pb2
 import server_pb2_grpc
 import client_listener_pb2
 import client_listener_pb2_grpc
-from account_management import check_if_online, create_account, fetch_sent_messages, list_accounts, login, logout, read_messages, send_offline_message, delete_account, delete_message
+from account_management import check_if_online, create_account, fetch_sent_messages, list_accounts, login, logout, logout_all_users, read_messages, send_offline_message, delete_account, delete_message
 
 from dotenv import load_dotenv
 import os
@@ -66,9 +66,9 @@ class Server(server_pb2_grpc.ServerServicer):
         response = server_pb2.ListUsernamesResponse()
         if res["success"]:
             usernames = server_pb2.ListUsernames(
-                success=res["success"],
-                message=res["message"],
-                matches=res["matches"]
+                success = res["success"],
+                message = res["message"],
+                matches = res["matches"]
             )
             response.usernames.CopyFrom(usernames)
         else:
@@ -165,13 +165,27 @@ class Server(server_pb2_grpc.ServerServicer):
 
         response = server_pb2.FetchSentMessagesResponse()
         if res["success"]:
-            sent_message = server_pb2.FetchedSentMessages(
+            response_body = server_pb2.FetchedSentMessages(
                 success=res["success"],
                 message=res["message"],
-                sent_messages=res["sent_messages"]
+                # sent_messages=res["sent_messages"]
             )
-            print(sent_message)
-            response.sent_messages.CopyFrom(sent_message)
+
+            for target_username, messages in res["sent_messages"].items():
+                sent_messages = server_pb2.SentMessages(
+                    target_username=target_username
+                )
+
+                for message in messages:
+                    unread_message = server_pb2.UnreadMessage(**message)
+                    sent_messages.messages.append(unread_message)
+                    
+                response_body.sent_messages.append(sent_messages)
+            # sent_messages = server_pb2.sent_messages()
+
+
+            print(response_body)
+            response.sent_messages.CopyFrom(response_body)
         else:
             failure = server_pb2.StandardServerResponse(
                 success=res["success"],
@@ -182,13 +196,17 @@ class Server(server_pb2_grpc.ServerServicer):
 
 
 def serve():
-    server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
-    server_pb2_grpc.add_ServerServicer_to_server(Server(), server)
-    address = f"{HOST}:{PORT}"
-    server.add_insecure_port(address)
-    server.start()
-    print(f"Running server on host: {HOST} and port: {PORT}")
-    server.wait_for_termination()
+    try:
+        server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
+        server_pb2_grpc.add_ServerServicer_to_server(Server(), server)
+        address = f"{HOST}:{PORT}"
+        server.add_insecure_port(address)
+        server.start()
+        print(f"Running server on host: {HOST} and port: {PORT}")
+        server.wait_for_termination()
+    except KeyboardInterrupt:
+        print("Caught keyboard interrupt, exiting")
+        logout_all_users()
 
 if __name__ == '__main__':
     serve()
