@@ -277,7 +277,10 @@ class Client:
     def delete_message(self, message_id): 
         if not self.username:
             return False, "You are not logged in! Delete message unsuccessful"
-        msg_data = {"command": "delete_message", "username": self.username, "message_id": message_id}
+        request = {"sender_username": self.username, "message_id": message_id}
+        request = server_pb2.DeleteMessageRequest(**request)
+        res = self.stub.DeleteMessage(request)
+        return res.success, res.message
         sent = write_socket(self.sock, msg_data)
         data = read_socket(self.sock)
 
