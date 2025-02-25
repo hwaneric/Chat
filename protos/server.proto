@@ -23,8 +23,6 @@ message StandardServerResponse {
 message UserAuthRequest {
     string username = 1;
     string password = 2;
-    string host = 3;
-    int32 port = 4;
 }
 
 message UserLoginSuccess {
@@ -35,8 +33,8 @@ message UserLoginSuccess {
 
 message UserLoginResponse {
     oneof response {
-        UserLoginSuccess login_response = 1;
-        StandardServerResponse login_failure = 2;
+        UserLoginSuccess success = 1;
+        StandardServerResponse failure = 2;
     }
 }
 
@@ -55,7 +53,7 @@ message ListUsernamesRequest {
 
 message ListUsernamesResponse {
     oneof response {
-        ListUsernames usernames = 1;
+        ListUsernames success = 1;
         StandardServerResponse failure = 2;
     }
 }
@@ -67,12 +65,11 @@ message SendMessageRequest {
     string message = 4;
 }
 
-// TODO: HAVE NOT DONE ONLINE MESSAGES YET 
 
 message RegisterClientRequest {
     string username = 1;
     string host = 2;
-    int32 port = 3; // This may need to be a string?
+    int32 port = 3; 
 }
 
 message ReadMessagesRequest {
@@ -95,7 +92,7 @@ message ReadMessage {
 
 message ReadMessageResponse {
     oneof response {
-        ReadMessage read_messages = 1;
+        ReadMessage success = 1;
         StandardServerResponse failure = 2;
     }
 }
@@ -127,7 +124,7 @@ message FetchedSentMessages {
 
 message FetchSentMessagesResponse {
     oneof response {
-        FetchedSentMessages sent_messages = 1;
+        FetchedSentMessages success = 1;
         StandardServerResponse failure = 2;
     }
 }

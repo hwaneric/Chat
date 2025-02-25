@@ -14,8 +14,3 @@ message OnlineMessage {
     string message = 2;
     string sender = 3;
 }
-
-// message server.StandardServerResponse {
-//     bool success = 1;
-//     string message = 2;
-// }

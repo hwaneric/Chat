@@ -248,7 +248,6 @@ class ChatApp:
         if success:
             messagebox.showinfo("Logout Successful", response)
             self.root.destroy()
-            self.client.sock.close()
         else: 
             messagebox.showerror("Logout Failed", response)
 
@@ -259,7 +258,6 @@ class ChatApp:
         if success:
             messagebox.showinfo("Delete Account Successful", response)
             self.root.destroy()
-            self.client.sock.close()
         else:
             messagebox.showerror("Delete Account Failed", response)
 
@@ -267,7 +265,6 @@ class ChatApp:
         if self.client.username: 
             self.client.logout()
         self.root.destroy()
-        self.client.sock.close()
 
 
 if __name__ == "__main__":

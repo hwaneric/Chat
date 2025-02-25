@@ -23,7 +23,7 @@ def username_exists(username):
 
     return username in existing_users
 
-def create_account(username, password, host, port): 
+def create_account(username, password): 
     existing_users = load_user_data()
 
     if not username or not password:
@@ -43,8 +43,6 @@ def create_account(username, password, host, port):
         "username": username, 
         "password": hashed_password.decode('utf-8'), 
         "online": True, 
-        "host": host, 
-        "port": port
     }
 
     save_user_data(existing_users)
@@ -58,7 +56,7 @@ def create_account(username, password, host, port):
         "Account created successfully.",
     }
 
-def login(username, password, host, port):
+def login(username, password):
     existing_users = load_user_data()
 
     is_online = check_if_online(username)
@@ -72,8 +70,6 @@ def login(username, password, host, port):
         user = existing_users[username]
         if bcrypt.checkpw(password.encode('utf-8'), user["password"].encode('utf-8')):
             user["online"] = True
-            user["host"] = host
-            user["port"] = port
             save_user_data(existing_users)
 
             # Get number of unread messages
@@ -99,21 +95,21 @@ def login(username, password, host, port):
 def logout(username):
     existing_users = load_user_data()
 
-    if username_exists(username):
-        user = existing_users[username]
-        user["online"] = False
-        user["host"] = ""
-        user["port"] = ""
-        save_user_data(existing_users)
+    if not username_exists(username):
         return {
-            "success": True, 
-            "message": "Logout successful.",
+            "success": False, 
+            "message": "Username does not exist.",
         }
-      
+
+    user = existing_users[username]
+    user["online"] = False
+
+    save_user_data(existing_users)
     return {
-        "success": False, 
-        "message": "Username does not exist.",
+        "success": True, 
+        "message": "Logout successful.",
     }
+   
 
 def list_accounts(username_pattern):
     try:
