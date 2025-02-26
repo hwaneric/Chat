@@ -31,11 +31,8 @@ Clicking the delete message button will take the user to a screen which displays
 
 The logout and delete account button upon being clicked will close the GUI and accordingly log the user out or delete the user’s account. 
 
-# Switching Between JSON Mode and Custom Wire Protocol
-To switch between JSON mode and our custom wire protocol, find the helpers.py file in the "helpers" folder. Set the "JSON_MODE" variable to True for JSON mode and False for our custom wire protocol.
-
 # Additional Documentation
-Additional documentation for this project can be found here: https://docs.google.com/document/d/1uMzqMKuS-AzIjxa3oqSrnPpCBMKhggZXnIDdfU5Fjbw/edit?tab=t.0
+Additional documentation for this project can be found here: https://docs.google.com/document/d/16wj4I3U3kjUVvdADQrB6-EC_sEv5Xo_xCDWyz_uL7R0/edit?tab=t.0
 
 # Running Tests
 To run our test suite, cd into the tests folder and run ```pytest``` in the terminal.
