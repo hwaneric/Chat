@@ -62,20 +62,18 @@ def test_create_account_success():
          patch('builtins.open', mock_open()) as mock_file, \
          patch('bcrypt.hashpw', return_value=b'hashed_password'):
         
-        result = create_account('testuser', 'password123', '127.0.0.1', 12345)
+        result = create_account('testuser', 'password123')
         
         assert result == {
             "success": True,
-            "message": "Account created successfully.",
-            "command": "server_response"
+            "message": "Account created successfully."
         }
 
 def test_create_account_empty_username_password():
-    result = create_account('', '', '127.0.0.1', 12345)
+    result = create_account('', '')
     assert result == {
         "success": False,
         "message": "Username and/or password cannot be empty.",
-        "command": "server_response"
     }
 
 def test_create_account_username_exists():
@@ -83,12 +81,11 @@ def test_create_account_username_exists():
     with patch('server.account_management.load_user_data', return_value=dummy_users), \
          patch('server.account_management.username_exists', return_value=True):
         
-        result = create_account('testuser', 'password123', '127.0.0.1', 12345)
+        result = create_account('testuser', 'password123')
         
         assert result == {
             "success": False,
             "message": "Username already exists. Please try again.",
-            "command": "server_response"
         }
 
 def test_login_success():
@@ -96,9 +93,7 @@ def test_login_success():
         'testuser': {
             'username': 'testuser',
             'password': bcrypt.hashpw('password123'.encode('utf-8'), bcrypt.gensalt()).decode('utf-8'),
-            'online': False,
-            'host': '',
-            'port': ''
+            'online': False
         }
     }
     with patch('server.account_management.load_user_data', return_value=dummy_users), \
@@ -109,22 +104,20 @@ def test_login_success():
          patch('os.path.exists', return_value=True), \
          patch('builtins.open', mock_open(read_data='[]')) as mock_file:
         
-        result = login('testuser', 'password123', '127.0.0.1', 12345)
+        result = login('testuser', 'password123')
         
         assert result == {
             "success": True,
             "message": "Login successful.",
-            "command": "login_response",
             "unread_message_count": 0
         }
 
 def test_login_user_already_logged_in():
     with patch('server.account_management.check_if_online', return_value=True):
-        result = login('testuser', 'password123', '127.0.0.1', 12345)
+        result = login('testuser', 'password123')
         assert result == {
             "success": False,
-            "message": "User is already logged in.",
-            "command": "server_response"
+            "message": "User is already logged in."
         }
 
 def test_login_incorrect_username_password():
@@ -132,28 +125,24 @@ def test_login_incorrect_username_password():
         'testuser': {
             'username': 'testuser',
             'password': bcrypt.hashpw('password123'.encode('utf-8'), bcrypt.gensalt()).decode('utf-8'),
-            'online': False,
-            'host': '',
-            'port': ''
+            'online': False
         }
     }
     with patch('server.account_management.load_user_data', return_value=dummy_users), \
          patch('server.account_management.username_exists', return_value=True):
         
-        result = login('testuser', 'wrongpassword', '127.0.0.1', 12345)
+        result = login('testuser', 'wrongpassword')
         assert result == {
             "success": False,
             "message": "Incorrect username or password. Please try again.",
-            "command": "server_response"
         }
 
 def test_login_username_does_not_exist():
     with patch('server.account_management.username_exists', return_value=False):
-        result = login('nonexistentuser', 'password123', '127.0.0.1', 12345)
+        result = login('nonexistentuser', 'password123')
         assert result == {
             "success": False,
-            "message": "Incorrect username or password. Please try again.",
-            "command": "server_response"
+            "message": "Incorrect username or password. Please try again."
         }
 
 def test_logout_success():
@@ -161,9 +150,7 @@ def test_logout_success():
         'testuser': {
             'username': 'testuser',
             'password': 'hashed_password',
-            'online': True,
-            'host': '127.0.0.1',
-            'port': 12345
+            'online': True
         }
     }
     with patch('server.account_management.load_user_data', return_value=dummy_users), \
@@ -174,16 +161,13 @@ def test_logout_success():
         
         assert result == {
             "success": True,
-            "message": "Logout successful.",
-            "command": "server_response"
+            "message": "Logout successful."
         }
         mock_save_user_data.assert_called_once_with({
             'testuser': {
                 'username': 'testuser',
                 'password': 'hashed_password',
-                'online': False,
-                'host': '',
-                'port': ''
+                'online': False
             }
         })
 
@@ -197,7 +181,6 @@ def test_logout_username_does_not_exist():
         assert result == {
             "success": False,
             "message": "Username does not exist.",
-            "command": "server_response"
         }
 
 def test_list_accounts_success():
@@ -211,8 +194,7 @@ def test_list_accounts_success():
         assert result == {
             "success": True,
             "message": "Accounts listed successfully.",
-            "matches": ['testuser1', 'testuser2'],
-            "command": "list_response"
+            "matches": ['testuser1', 'testuser2']
         }
 
 def test_list_accounts_no_matches():
@@ -227,7 +209,6 @@ def test_list_accounts_no_matches():
             "success": True,
             "message": "Accounts listed successfully.",
             "matches": [],
-            "command": "list_response"
         }
 
 def test_send_offline_message_success():
@@ -251,7 +232,6 @@ def test_send_offline_message_success():
         assert result == {
             "success": True,
             "message": "Message sent successfully.",
-            "command": "server_response"
         }
 
 def test_send_offline_message_target_user_does_not_exist():
@@ -268,7 +248,6 @@ def test_send_offline_message_target_user_does_not_exist():
         assert result == {
             "success": False,
             "message": "Target user does not exist.",
-            "command": "server_response"
         }
 
 def test_read_messages_success():
@@ -293,7 +272,6 @@ def test_read_messages_success():
             "success": True,
             "message": "Messages read successfully.",
             "messages": [dummy_unread_messages[0]],
-            "command": "read_response"
         }
 
 def test_read_messages_target_user_does_not_exist():
@@ -305,7 +283,6 @@ def test_read_messages_target_user_does_not_exist():
         assert result == {
             "success": False,
             "message": "Target user does not exist.",
-            "command": "server_response"
         }
 
 def test_check_if_online_user_online():
@@ -313,9 +290,7 @@ def test_check_if_online_user_online():
         'testuser': {
             'username': 'testuser',
             'password': 'hashed_password',
-            'online': True,
-            'host': '127.0.0.1',
-            'port': 12345
+            'online': True
         }
     }
     with patch('server.account_management.load_user_data', return_value=dummy_users):
@@ -327,8 +302,6 @@ def test_check_if_online_user_offline():
             'username': 'testuser',
             'password': 'hashed_password',
             'online': False,
-            'host': '127.0.0.1',
-            'port': 12345
         }
     }
     with patch('server.account_management.load_user_data', return_value=dummy_users):
@@ -394,9 +367,7 @@ def test_delete_account_success():
         'testuser': {
             'username': 'testuser',
             'password': 'hashed_password',
-            'online': True,
-            'host': '127.0.0.1',
-            'port': 12345
+            'online': True
         }
     }
     with patch('server.account_management.load_user_data', return_value=dummy_users), \
@@ -410,7 +381,6 @@ def test_delete_account_success():
         assert result == {
             "success": True,
             "message": "Account deleted successfully.",
-            "command": "server_response"
         }
 
 def test_delete_account_username_does_not_exist():
@@ -422,7 +392,6 @@ def test_delete_account_username_does_not_exist():
         assert result == {
             "success": False,
             "message": "Username does not exist.",
-            "command": "server_response"
         }
 
 def test_delete_account_offline_user():
@@ -430,9 +399,7 @@ def test_delete_account_offline_user():
         'testuser': {
             'username': 'testuser',
             'password': 'hashed_password',
-            'online': False,
-            'host': '127.0.0.1',
-            'port': 12345
+            'online': False
         }
     }
     with patch('server.account_management.load_user_data', return_value=dummy_users):
@@ -442,7 +409,6 @@ def test_delete_account_offline_user():
         assert result == {
             "success": False,
             "message": "Attempting to delete offline account.",
-            "command": "server_response"
         }
 
 def test_delete_message_success():
@@ -466,7 +432,6 @@ def test_delete_message_success():
         assert result == {
             "success": True,
             "message": "Message deleted successfully.",
-            "command": "server_response"
         }
 
 def test_delete_message_no_sent_messages():
@@ -478,7 +443,6 @@ def test_delete_message_no_sent_messages():
         assert result == {
             "success": False,
             "message": "No sent messages found.",
-            "command": "server_response"
         }
 
 def test_delete_message_id_not_found():
@@ -498,7 +462,6 @@ def test_delete_message_id_not_found():
         assert result == {
             "success": False,
             "message": "Message ID not found.",
-            "command": "server_response"
         }
 
 def test_delete_message_target_user_does_not_exist():
@@ -518,7 +481,6 @@ def test_delete_message_target_user_does_not_exist():
         assert result == {
             "success": False,
             "message": "Target user does not exist.",
-            "command": "server_response"
         }
 
 def test_fetch_sent_messages_success():
@@ -539,7 +501,6 @@ def test_fetch_sent_messages_success():
             "success": True,
             "sent_messages": dummy_sent_messages,
             "message": "Sent messages fetched successfully.",
-            "command": "fetch_sent_messages_response"
         }
 
 def test_fetch_sent_messages_no_sent_messages():
@@ -551,5 +512,4 @@ def test_fetch_sent_messages_no_sent_messages():
         assert result == {
             "success": False,
             "message": "No sent messages found.",
-            "command": "server_response"
         }
