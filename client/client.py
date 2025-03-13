@@ -230,6 +230,7 @@ class Client:
         )
         address = f"{self.client_host}:{0}"
         port = server.add_insecure_port(address)
+
         server.start()
         print(f"Running server on address")
         print(f"Bound to port: {port}")

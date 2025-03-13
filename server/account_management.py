@@ -7,31 +7,36 @@ import bcrypt
 
 USER_DATA_FILE = "user_data.json"
 
-def load_user_data():
-    if os.path.exists(USER_DATA_FILE):
-        with open(USER_DATA_FILE, "r") as f:
+def load_user_data(db_path):
+    # user_data_path = get_user_data_pathname()
+    user_data_path = os.path.join(db_path, USER_DATA_FILE)
+
+    if os.path.exists(user_data_path):
+        with open(user_data_path, "r") as f:
             return json.load(f)
     return {}
 
-def save_user_data(users):
-    with open(USER_DATA_FILE, "w") as f:
+def save_user_data(users, db_path):
+    # user_data_path = get_user_data_pathname()
+    user_data_path = os.path.join(db_path, USER_DATA_FILE)
+    with open(user_data_path, "w") as f:
         json.dump(users, f)
 
 
-def username_exists(username):
-    existing_users = load_user_data()
+def username_exists(username, db_path):
+    existing_users = load_user_data(db_path)
 
     return username in existing_users
 
-def create_account(username, password): 
-    existing_users = load_user_data()
+def create_account(username, password, db_path): 
+    existing_users = load_user_data(db_path)
 
     if not username or not password:
         return {
             "success": False, 
             "message": "Username and/or password cannot be empty."
         }
-    if username_exists(username):
+    if username_exists(username, db_path):
         return {
             "success": False, 
             "message": "Username already exists. Please try again.",
@@ -45,10 +50,10 @@ def create_account(username, password):
         "online": True, 
     }
 
-    save_user_data(existing_users)
+    save_user_data(existing_users, db_path)
 
-    db_pathname = get_db_pathname()
-    user_file_path = os.path.join(db_pathname, "unread_messages", f"{username}.json")
+    # db_pathname = get_db_pathname()
+    user_file_path = os.path.join(db_path, "unread_messages", f"{username}.json")
     with open(user_file_path, 'w') as user_file:
         json.dump([], user_file)
     return {
@@ -56,25 +61,26 @@ def create_account(username, password):
         "Account created successfully.",
     }
 
-def login(username, password):
-    existing_users = load_user_data()
-
-    is_online = check_if_online(username)
+def login(username, password, db_path):
+    print(db_path)
+    existing_users = load_user_data(db_path)
+    print(existing_users)
+    is_online = check_if_online(username, db_path)
     if is_online:
         return {
             "success": False, 
             "message": "User is already logged in.",
         }
-        
-    if username_exists(username):
+    if username_exists(username, db_path):
+        print('hello')
         user = existing_users[username]
         if bcrypt.checkpw(password.encode('utf-8'), user["password"].encode('utf-8')):
             user["online"] = True
-            save_user_data(existing_users)
+            save_user_data(existing_users, db_path)
 
             # Get number of unread messages
-            db_pathname = get_db_pathname()
-            unread_messages_path = os.path.join(db_pathname, "unread_messages", f"{username}.json")
+            # db_pathname = get_db_pathname()
+            unread_messages_path = os.path.join(db_path, "unread_messages", f"{username}.json")
             unread_message_count = 0
             if os.path.exists(unread_messages_path):
                 with open(unread_messages_path, "r") as f:
@@ -92,10 +98,10 @@ def login(username, password):
         "message": "Incorrect username or password. Please try again.",
     }
 
-def logout(username):
-    existing_users = load_user_data()
+def logout(username, db_path):
+    existing_users = load_user_data(db_path)
 
-    if not username_exists(username):
+    if not username_exists(username, db_path):
         return {
             "success": False, 
             "message": "Username does not exist.",
@@ -104,16 +110,16 @@ def logout(username):
     user = existing_users[username]
     user["online"] = False
 
-    save_user_data(existing_users)
+    save_user_data(existing_users, db_path)
     return {
         "success": True, 
         "message": "Logout successful.",
     }
    
 
-def list_accounts(username_pattern):
+def list_accounts(username_pattern, db_path):
     try:
-        existing_users = load_user_data()
+        existing_users = load_user_data(db_path)
         matching_users = [username for username in existing_users.keys() if re.search(username_pattern, username)]
         return {
             "success": True, 
@@ -126,16 +132,16 @@ def list_accounts(username_pattern):
             "message": "Invalid regex pattern.",
         }
 
-def send_offline_message(target_username, sender_username, message, timestamp):
+def send_offline_message(target_username, sender_username, message, timestamp, db_path):
     start = time.time()
-    existing_users = load_user_data()
-    db_pathname = get_db_pathname()
+    existing_users = load_user_data(db_path)
+    # db_pathname = get_db_pathname()
 
     # Generate a unique message ID
     message_id = str(uuid.uuid4())
 
     # Find path to target user's unread messages
-    target_db_pathname = os.path.join(db_pathname, "unread_messages", f"{target_username}.json")
+    target_db_pathname = os.path.join(db_path, "unread_messages", f"{target_username}.json")
     if not os.path.exists(target_db_pathname):
         return {
             "success": False, 
@@ -159,7 +165,7 @@ def send_offline_message(target_username, sender_username, message, timestamp):
         json.dump(unread_messages, f)
 
     # Save the sent message to the sender's sent messages
-    sent_db_pathname = os.path.join(db_pathname, "sent_messages", f"{sender_username}.json")
+    sent_db_pathname = os.path.join(db_path, "sent_messages", f"{sender_username}.json")
     if not os.path.exists(sent_db_pathname):
         sent_messages = {}
     else:
@@ -180,11 +186,11 @@ def send_offline_message(target_username, sender_username, message, timestamp):
         "message": "Message sent successfully.",
     }
 
-def read_messages(username, num_messages):
-    db_pathname = get_db_pathname()
+def read_messages(username, num_messages, db_path):
+    # db_pathname = get_db_pathname()
 
     # Find path to target user's unread messages
-    target_db_pathname = os.path.join(db_pathname, "unread_messages", f"{username}.json")
+    target_db_pathname = os.path.join(db_path, "unread_messages", f"{username}.json")
     if not os.path.exists(target_db_pathname):
         return {
             "success": False, 
@@ -202,7 +208,7 @@ def read_messages(username, num_messages):
     for message in msg_to_read: 
         sender_username = message["sender"]
         message_id = message["message_id"]
-        sent_db_pathname = os.path.join(db_pathname, "sent_messages", f"{sender_username}.json")
+        sent_db_pathname = os.path.join(db_path, "sent_messages", f"{sender_username}.json")
         if os.path.exists(sent_db_pathname):
             with open(sent_db_pathname, "r") as f:
                 sent_messages = json.load(f)
@@ -218,8 +224,8 @@ def read_messages(username, num_messages):
     }
     return return_data
 
-def check_if_online(username):
-    existing_users = load_user_data()
+def check_if_online(username, db_path):
+    existing_users = load_user_data(db_path)
     if username in existing_users:
         user = existing_users[username]
         return user["online"]
@@ -227,23 +233,17 @@ def check_if_online(username):
     return False
     # raise ValueError("Username does not exist.")
 
-def get_db_pathname():
-    current_dir = os.path.dirname(__file__)
-    base_dir = os.path.dirname(current_dir)
-    db_pathname = os.path.join(base_dir, 'db')
-    return db_pathname
-
-def logout_all_users():
-    existing_users = load_user_data()
+def logout_all_users(db_path):
+    existing_users = load_user_data(db_path)
     for username in existing_users:
         user = existing_users[username]
         user["online"] = False
         user["host"] = ""
         user["port"] = ""
-    save_user_data(existing_users)
+    save_user_data(existing_users, db_path)
 
-def delete_account(username):
-    existing_users = load_user_data()
+def delete_account(username, db_path):
+    existing_users = load_user_data(db_path)
 
     if username not in existing_users:
         return {
@@ -253,14 +253,14 @@ def delete_account(username):
     
     if existing_users[username]["online"]:
         del existing_users[username]
-        save_user_data(existing_users)
+        save_user_data(existing_users, db_path)
 
-        db_pathname = get_db_pathname()
-        unread_messages_path = os.path.join(db_pathname, "unread_messages", f"{username}.json")
+        # db_pathname = get_db_pathname()
+        unread_messages_path = os.path.join(db_path, "unread_messages", f"{username}.json")
         if os.path.exists(unread_messages_path):
             os.remove(unread_messages_path)
 
-        sent_messages_path = os.path.join(db_pathname, "sent_messages", f"{username}.json")
+        sent_messages_path = os.path.join(db_path, "sent_messages", f"{username}.json")
         if os.path.exists(sent_messages_path):
             os.remove(sent_messages_path)
 
@@ -274,11 +274,11 @@ def delete_account(username):
         "message": "Attempting to delete offline account.",
     }
     
-def delete_message(username, message_id):
-    db_pathname = get_db_pathname()
+def delete_message(username, message_id, db_path):
+    # db_pathname = get_db_pathname()
 
     # Load the user's sent messages
-    sent_db_pathname = os.path.join(db_pathname, "sent_messages", f"{username}.json")
+    sent_db_pathname = os.path.join(db_path, "sent_messages", f"{username}.json")
     if not os.path.exists(sent_db_pathname):
         return {"success": False, "message": "No sent messages found."}
     
@@ -304,7 +304,7 @@ def delete_message(username, message_id):
         json.dump(sent_messages, f)
 
     # Load the target user's unread messages
-    target_db_pathname = os.path.join(db_pathname, "unread_messages", f"{target_username}.json")
+    target_db_pathname = os.path.join(db_path, "unread_messages", f"{target_username}.json")
     if not os.path.exists(target_db_pathname):
         return {"success": False, "message": "Target user does not exist."}
     with open(target_db_pathname, "r") as f:
@@ -318,9 +318,9 @@ def delete_message(username, message_id):
     return {"success": True, "message": "Message deleted successfully."}
 
 
-def fetch_sent_messages(username):
-    db_pathname = get_db_pathname()
-    sent_db_pathname = os.path.join(db_pathname, "sent_messages", f"{username}.json")
+def fetch_sent_messages(username, db_path):
+    # db_pathname = get_db_pathname()
+    sent_db_pathname = os.path.join(db_path, "sent_messages", f"{username}.json")
     if not os.path.exists(sent_db_pathname):
         return {"success": False, "message": "No sent messages found."}
 
@@ -328,3 +328,14 @@ def fetch_sent_messages(username):
         sent_messages = json.load(f)
     return {"success": True, "message": "Sent messages fetched successfully.", "sent_messages": sent_messages}
 
+
+def get_db_pathname():
+    current_dir = os.path.dirname(__file__)
+    base_dir = os.path.dirname(current_dir)
+    db_pathname = os.path.join(base_dir, 'db')
+    return db_pathname
+
+def get_user_data_pathname():
+    db_pathname = get_db_pathname()
+    user_data_pathname = os.path.join(db_pathname, USER_DATA_FILE)
+    return user_data_pathname
