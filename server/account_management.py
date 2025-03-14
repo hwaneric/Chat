@@ -230,7 +230,6 @@ def check_if_online(username, db_path):
         return user["online"]
     
     return False
-    # raise ValueError("Username does not exist.")
 
 def logout_all_users(db_path):
     existing_users = load_user_data(db_path)
