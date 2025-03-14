@@ -62,9 +62,7 @@ def create_account(username, password, db_path):
     }
 
 def login(username, password, db_path):
-    print(db_path)
     existing_users = load_user_data(db_path)
-    print(existing_users)
     is_online = check_if_online(username, db_path)
     if is_online:
         return {
@@ -72,14 +70,12 @@ def login(username, password, db_path):
             "message": "User is already logged in.",
         }
     if username_exists(username, db_path):
-        print('hello')
         user = existing_users[username]
         if bcrypt.checkpw(password.encode('utf-8'), user["password"].encode('utf-8')):
             user["online"] = True
             save_user_data(existing_users, db_path)
 
             # Get number of unread messages
-            # db_pathname = get_db_pathname()
             unread_messages_path = os.path.join(db_path, "unread_messages", f"{username}.json")
             unread_message_count = 0
             if os.path.exists(unread_messages_path):
@@ -133,9 +129,10 @@ def list_accounts(username_pattern, db_path):
         }
 
 def send_offline_message(target_username, sender_username, message, timestamp, db_path, message_id=None):
-    start = time.time()
-    existing_users = load_user_data(db_path)
-    # db_pathname = get_db_pathname()
+    '''
+        Sends an offline message to the target user. Returns a response to be 
+        sent back to the client and the message ID.
+    '''
 
     # Generate a unique message ID
     if not message_id:
@@ -143,11 +140,13 @@ def send_offline_message(target_username, sender_username, message, timestamp, d
 
     # Find path to target user's unread messages
     target_db_pathname = os.path.join(db_path, "unread_messages", f"{target_username}.json")
-    if not os.path.exists(target_db_pathname):
-        return {
-            "success": False, 
-            "message": "Target user does not exist.", 
+
+    if not os.path.exists(target_db_pathname) or not username_exists(target_username, db_path):
+        res = {
+            "success": False,
+            "message": "Target user does not exist.",
         }
+        return res, -1
 
     new_message = {"message_id": message_id, "message": message, "sender": sender_username, "timestamp": timestamp}
     with open(target_db_pathname, "r") as f:
@@ -180,8 +179,6 @@ def send_offline_message(target_username, sender_username, message, timestamp, d
     with open(sent_db_pathname, "w") as f:
         json.dump(sent_messages, f)
 
-    end = time.time()
-    print(f"Time to send offline message: {end - start} seconds")
     res = {
         "success": True, 
         "message": "Message sent successfully.",
