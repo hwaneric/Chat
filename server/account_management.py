@@ -132,13 +132,14 @@ def list_accounts(username_pattern, db_path):
             "message": "Invalid regex pattern.",
         }
 
-def send_offline_message(target_username, sender_username, message, timestamp, db_path):
+def send_offline_message(target_username, sender_username, message, timestamp, db_path, message_id=None):
     start = time.time()
     existing_users = load_user_data(db_path)
     # db_pathname = get_db_pathname()
 
     # Generate a unique message ID
-    message_id = str(uuid.uuid4())
+    if not message_id:
+        message_id = str(uuid.uuid4())
 
     # Find path to target user's unread messages
     target_db_pathname = os.path.join(db_path, "unread_messages", f"{target_username}.json")
@@ -181,10 +182,11 @@ def send_offline_message(target_username, sender_username, message, timestamp, d
 
     end = time.time()
     print(f"Time to send offline message: {end - start} seconds")
-    return {
+    res = {
         "success": True, 
         "message": "Message sent successfully.",
     }
+    return res, message_id
 
 def read_messages(username, num_messages, db_path):
     # db_pathname = get_db_pathname()

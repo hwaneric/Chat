@@ -1,1 +1,1 @@
-[]
+[{"message_id": "d81f0cc7-f661-4dde-8d5e-17d9ef23f85b", "message": "testing send message to delete", "sender": "new", "timestamp": 1741921805}, {"message_id": "1dd1610d-412e-403e-88df-6c2d5e0c6daf", "message": "testing send message to delete", "sender": "new", "timestamp": 1741921888}, {"message_id": "bee5ec40-83c5-46cb-84d4-b1f300b00041", "message": "test to delete 3", "sender": "new", "timestamp": 1741922054}, {"message_id": "92d1b85a-0661-4b66-bcc1-a0e16a29eb8f", "message": "regular send", "sender": "new", "timestamp": 1741923633}]

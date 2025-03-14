@@ -6,8 +6,8 @@ from dotenv import load_dotenv
 import os
 
 load_dotenv()
-SERVER_HOST = os.getenv("SERVER_HOST")
-SERVER_PORT = int(os.getenv("SERVER_PORT"))
+SERVER_HOST = os.getenv("SERVER_HOST_0")
+SERVER_PORT = int(os.getenv("SERVER_PORT_0"))
 CLIENT_HOST = os.getenv("CLIENT_HOST")
 
 class ChatApp: 

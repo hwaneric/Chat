@@ -23,6 +23,7 @@ message StandardServerResponse {
 message UserAuthRequest {
     string username = 1;
     string password = 2;
+    // bool is_client = 3;
 }
 
 message UserLoginSuccess {
@@ -63,6 +64,7 @@ message SendMessageRequest {
     string target_username = 2;
     int32 timestamp = 3;
     string message = 4;
+    optional string message_id = 5;
 }
 
 
