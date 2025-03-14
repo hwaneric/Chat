@@ -33,6 +33,7 @@ class Client:
         request = {
             "username": username, 
             "password": password,
+            "from_client": True,
         }
 
         request = server_pb2.UserAuthRequest(**request)
@@ -50,7 +51,8 @@ class Client:
 
         request = {
             "username": username, 
-            "password": password
+            "password": password,
+            "from_client": True,
         }
 
         request = server_pb2.UserAuthRequest(**request)
@@ -91,7 +93,8 @@ class Client:
             "sender_username": self.username, 
             "target_username": target_username, 
             "timestamp": int(time.time()),
-            "message": message
+            "message": message,
+            "from_client": True,
         }
         request = server_pb2.SendMessageRequest(**request)
         res = self.stub.SendMessage(request)
@@ -103,7 +106,8 @@ class Client:
         '''
 
         request = {
-            "username": self.username
+            "username": self.username,
+            "from_client": True,
         }
         request = server_pb2.UserLogoutRequest(**request)
         res = self.stub.Logout(request)
@@ -121,7 +125,8 @@ class Client:
 
         request = {
             "username": self.username,
-            "num_messages": num_messages
+            "num_messages": num_messages,
+            "from_client": True,
         }
         request = server_pb2.ReadMessagesRequest(**request)
         response = self.stub.ReadMessages(request)
@@ -147,8 +152,10 @@ class Client:
         '''
 
         request = {
-            "username": self.username
-            }
+            "username": self.username,
+            "from_client": True,
+        }
+
         request = server_pb2.DeleteAccountRequest(**request)
         res = self.stub.DeleteAccount(request)
 
@@ -194,7 +201,11 @@ class Client:
 
         if not self.username:
             return False, "You are not logged in! Delete message unsuccessful"
-        request = {"sender_username": self.username, "message_id": message_id}
+        request = {
+            "sender_username": self.username, 
+            "message_id": message_id,
+            "from_client": True,
+        }
         request = server_pb2.DeleteMessageRequest(**request)
         res = self.stub.DeleteMessage(request)
         return res.success, res.message
@@ -209,7 +220,8 @@ class Client:
         request = {
             "username": self.username,
             "host": self.client_host,
-            "port": port
+            "port": port,
+            "from_client": True,
         }
         register_listener_request = server_pb2.RegisterClientRequest(**request)
         res = self.stub.RegisterClient(register_listener_request)

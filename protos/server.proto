@@ -23,6 +23,7 @@ message StandardServerResponse {
 message UserAuthRequest {
     string username = 1;
     string password = 2;
+    bool from_client = 3;
 }
 
 message UserLoginSuccess {
@@ -40,6 +41,7 @@ message UserLoginResponse {
 
 message UserLogoutRequest {
     string username = 1;
+    bool from_client = 2;
 }
 
 message ListUsernames {
@@ -63,6 +65,8 @@ message SendMessageRequest {
     string target_username = 2;
     int32 timestamp = 3;
     string message = 4;
+    optional string message_id = 5;
+    bool from_client = 6;
 }
 
 
@@ -70,11 +74,13 @@ message RegisterClientRequest {
     string username = 1;
     string host = 2;
     int32 port = 3; 
+    bool from_client = 4;
 }
 
 message ReadMessagesRequest {
     string username = 1;
     int32 num_messages = 2;
+    bool from_client = 3;
 }
 
 message UnreadMessage {
@@ -99,11 +105,13 @@ message ReadMessageResponse {
 
 message DeleteAccountRequest {
     string username = 1;
+    bool from_client = 2;
 }
 
 message DeleteMessageRequest {
     string sender_username = 1;
     string message_id = 2;
+    bool from_client = 3;
 }
 
 message FetchSentMessagesRequest {
