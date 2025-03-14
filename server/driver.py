@@ -2,6 +2,7 @@ from concurrent import futures
 import time
 import grpc
 import sys
+from server import Server
 sys.path.append('../protos')
 import server_pb2 
 import server_pb2_grpc
@@ -16,310 +17,11 @@ load_dotenv()
 HOST = os.getenv("SERVER_HOST")
 PORT = int(os.getenv("SERVER_PORT"))
 
-class Server(server_pb2_grpc.ServerServicer):
-    def __init__(self, id, host, port, db_path=None):
-        # Map of username to client stub for sending messages to clients that must be delivered immediately
-        self.stub_map = {} 
-
-        # Map of Stubs to Peer Servers 
-        self.server_stubs = {}
-
-        self.id = id
-        self.is_leader = False
-        self.db_path = None
-
-        self.host = host
-        self.port = port
-
-        if db_path:
-            if os.path.exists(db_path):
-                self.db_path = db_path
-            else:
-                print("Database does not exist. Using default instead.")
-        else:
-            self.db_path = get_db_pathname(id)
-        print(self.db_path)
-    
-
-    def Signup(self, request, context):
-        username = request.username
-        password = request.password
-
-        print(f"Received signup request from {username}")
-        res = create_account(username, password, self.db_path)
-
-        if res["success"] and self.is_leader:
-            # Notify other servers of new user
-            for stub in self.server_stubs.values():
-                request = server_pb2.UserAuthRequest(username=username, password=password)
-                temp_res = stub.Signup(request)
-                if not temp_res.success:
-                    print(f"Failed to notify server {stub} of new user {username}")
-                    print(res.message)
-                    raise Exception(f"Failed to notify server {stub} of new user {username}")
-        
-
-        return server_pb2.StandardServerResponse(**res)
-        
-    def Login(self, request, context):
-        username = request.username
-        password = request.password
-        
-        print(f"Received login request from {username}")
-        res = login(username, password, self.db_path)
-
-        server_response = server_pb2.UserLoginResponse() 
-        if res["success"]:
-            user_login_success = server_pb2.UserLoginSuccess(**res)  # create UserLoginSuccess
-            server_response.success.CopyFrom(user_login_success)  # assign to login_response
-
-            if self.is_leader:
-                # Notify other servers of new user
-                for stub in self.server_stubs.values():
-                    request = server_pb2.UserAuthRequest(username=username, password=password)
-                    temp_res = stub.Login(request)
-                    if not temp_res.success:
-                        print(f"Failed to notify server {stub} of new user {username}")
-                        print(res.message)
-                        raise Exception(f"Failed to notify server {stub} of new user {username}")
-        else:
-            standard_server_response = server_pb2.StandardServerResponse(**res)  # create StandardServerResponse
-            server_response.failure.CopyFrom(standard_server_response)  # assign to login_response
-        return server_response
-    
-    # Done up to here
-    def Logout(self, request, context):
-        username = request.username
-        print(f"Received logout request from {username}")
-        res = logout(username, self.db_path)
-
-        if res["success"] and self.is_leader:
-            # Notify other servers of logout
-            for stub in self.server_stubs.values():
-                request = server_pb2.UserLogoutRequest(username=username)
-                temp_res = stub.Logout(request)
-                if not temp_res.success:
-                    print(f"Failed to notify server {stub} of new user {username}")
-                    print(res.message)
-                    raise Exception(f"Failed to notify server {stub} of new user {username}")
-
-
-        if username in self.stub_map:
-            del self.stub_map[username]
-
-        return server_pb2.StandardServerResponse(**res)
-
-    def ListUsernames(self, request, context):
-        username_pattern = request.username_pattern
-        print("Received list accounts request")
-        res = list_accounts(username_pattern, self.db_path)
-        
-        server_response = server_pb2.ListUsernamesResponse()
-        if res["success"]:
-            usernames = server_pb2.ListUsernames(
-                success = res["success"],
-                message = res["message"],
-                matches = res["matches"]
-            )
-            server_response.success.CopyFrom(usernames)
-
-        else:
-            failure = server_pb2.StandardServerResponse(
-                success=res["success"],
-                message=res["message"]
-            )
-            server_response.failure.CopyFrom(failure)
-        
-        return server_response
-    
-    def SendMessage(self, request, context):
-        sender = request.sender_username
-        target = request.target_username
-        message = request.message
-        timestamp = request.timestamp
-        message_id = None
-        if request.HasField("message_id"):
-            message_id = request.message_id
-
-        print(f"Received message from {sender} to {target}")
-
-        target_logged_in = check_if_online(target, self.db_path)
-        if target_logged_in and target in self.stub_map:
-            print("Target is online, sending online message")
-
-            res = {"success": True, "message": message, "sender": sender}
-            online_message = client_listener_pb2.OnlineMessage(**res)
-
-            stub = self.stub_map[target]
-            stub.SendOnlineMessage(online_message)
-
-            return server_pb2.StandardServerResponse(success=True, message="Message sent successfully")
-
-        else:
-            res, message_id = send_offline_message(target, sender, message, timestamp, self.db_path, message_id=message_id)
-            if res["success"] and self.is_leader:
-                # Notify other servers of logout
-                for stub in self.server_stubs.values():
-                    request = server_pb2.SendMessageRequest(
-                        sender_username=sender,
-                        target_username=target,
-                        message=message,
-                        timestamp=timestamp,
-                        message_id=message_id
-                    )
-                    temp_res = stub.SendMessage(request)
-                    if not temp_res.success:
-                        print(f"Failed to notify server {stub} of new message from {sender} to {target}")
-                        print(res.message)
-                        raise Exception(f"Failed to notify server {stub} of new message from {sender} to {target}")
-                
-            return server_pb2.StandardServerResponse(**res)
-    
-    def RegisterClient(self, request, context):
-        '''
-            Registers a client stub to the server for sending messages to the client
-        '''
-
-        username = request.username
-        host = request.host
-        port = request.port
-
-        channel = grpc.insecure_channel(f"{host}:{port}")
-        stub = client_listener_pb2_grpc.Client_ListenerStub(channel)
-        print(f"Received register client request from {username}")
-
-        self.stub_map[username] = stub
-
-        if self.is_leader:
-            # Notify other servers of new client
-            for stub in self.server_stubs.values():
-                request = server_pb2.RegisterClientRequest(username=username, host=host, port=port)
-                temp_res = stub.RegisterClient(request)
-                if not temp_res.success:
-                    print(f"Failed to notify server {stub} of new client registration {username}")
-                    print(temp_res.message)
-                    raise Exception(f"Failed to notify server {stub} of new client registration {username}")
-                
-        return server_pb2.StandardServerResponse(success=True, message= "Registered successfully")
-
-    def ReadMessages(self, request, context):
-        username = request.username
-        num_messages = request.num_messages
-        print(f"Received read messages request from {username}")
-        res = read_messages(username, num_messages, self.db_path)
-
-        server_response = server_pb2.ReadMessageResponse()
-        if res["success"]:
-            read_message = server_pb2.ReadMessage(
-                success=res["success"],
-                message=res["message"],
-                messages=res["messages"]
-            )
-            server_response.success.CopyFrom(read_message)
-
-            if self.is_leader:
-                # Notify other servers of read messages
-                for stub in self.server_stubs.values():
-                    request = server_pb2.ReadMessagesRequest(username=username, num_messages=num_messages)
-                    temp_res = stub.ReadMessages(request)
-                    if not temp_res.success:
-                        print(f"Failed to notify server {stub} of read messages for {username}")
-                        print(res.message)
-                        raise Exception(f"Failed to notify server {stub} of read messages for {username}")
-        else:
-            failure = server_pb2.StandardServerResponse(
-                success=res["success"],
-                message=res["message"]
-            )
-            server_response.failure.CopyFrom(failure)
-
-        return server_response
-
-    def DeleteAccount(self, request, context):
-        username = request.username
-        print(f"Received delete account request from {username}")
-        res = delete_account(username, self.db_path)
-
-        if res["success"] and self.is_leader:
-            # Notify other servers of delete account
-            for stub in self.server_stubs.values():
-                request = server_pb2.DeleteAccountRequest(username=username)
-                temp_res = stub.DeleteAccount(request)
-                if not temp_res.success:
-                    print(f"Failed to notify server {stub} of delete account for {username}")
-                    print(res.message)
-                    raise Exception(f"Failed to notify server {stub} of delete account for {username}")
-
-        if username in self.stub_map:
-            del self.stub_map[username]
-        
-        return server_pb2.StandardServerResponse(**res)
-
-    def DeleteMessage(self, request, context):
-        username = request.sender_username
-        message_id = request.message_id
-        print(f"Received delete message request from {username}")
-
-        res = delete_message(username, message_id, self.db_path)
-
-        if res["success"] and self.is_leader:
-            # Notify other servers of delete message
-            for stub in self.server_stubs.values():
-                request = server_pb2.DeleteMessageRequest(sender_username=username, message_id=message_id)
-                temp_res = stub.DeleteMessage(request)
-                if not temp_res.success:
-                    print(f"Failed to notify server {stub} of delete message for {username}")
-                    print(temp_res.message)
-                    raise Exception(f"Failed to notify server {stub} of delete message for {username}")
-                
-        return server_pb2.StandardServerResponse(**res)
-    
-    def FetchSentMessages(self, request, context):
-        username = request.username
-        print(f"Received fetch sent messages request from {username}")
-        res = fetch_sent_messages(username, self.db_path)
-
-        response = server_pb2.FetchSentMessagesResponse()
-        if res["success"]:
-            response_body = server_pb2.FetchedSentMessages(
-                success=res["success"],
-                message=res["message"],
-            )
-
-            # Add sent messages to server response
-            for target_username, messages in res["sent_messages"].items():
-                sent_messages = server_pb2.SentMessages(
-                    target_username=target_username
-                )
-
-                for message in messages:
-                    unread_message = server_pb2.UnreadMessage(**message)
-                    sent_messages.messages.append(unread_message)
-                    
-                response_body.sent_messages.append(sent_messages)
-
-            response.success.CopyFrom(response_body)
-        else:
-            failure = server_pb2.StandardServerResponse(
-                success=res["success"],
-                message=res["message"]
-            )
-            response.failure.CopyFrom(failure)
-        return response
-
-    def cleanup(self):
-        '''
-            Cleans up the server by logging out all users
-        '''
-        print("Cleaning up server")
-        logout_all_users(self.db_path)
-        print("Logged out all users")
-        print("Server cleanup complete")
-    
-    
-
-
 def serve(server_object):
+    '''
+        Starts the server and listens for incoming requests
+    '''
+
     try:
         server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
         server_pb2_grpc.add_ServerServicer_to_server(server_object, server)
@@ -391,22 +93,13 @@ def initialize(id, db_path):
     serve(server_object)
     server_object.cleanup()
 
-def get_db_pathname(id):
-    print('id', id)
-    current_dir = os.path.dirname(__file__)
-    base_dir = os.path.dirname(current_dir)
-    db_pathname = os.path.join(base_dir, f'db_{id}')
-
-    # db_pathname = os.path.join(base_dir, f'db')
-
-    return db_pathname
 
 
 
 if __name__ == '__main__':
     # serve()
     if len(sys.argv) < 2:
-        print("Usage: python driver.py <server_id>")
+        print("Usage: python driver.py <server_id> <optional: db_path>")
         sys.exit(1)
     
     # Get command line arguments
@@ -421,7 +114,6 @@ if __name__ == '__main__':
         sys.exit(1)
 
     server_id = int(server_id)
-    print("hello", server_id)
     if server_id not in [0, 1, 2]:
         print("Invalid server ID. Please provide 0, 1, or 2.")
         sys.exit(1)

@@ -24,7 +24,7 @@ _sym_db = _symbol_database.Default()
 
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x0cserver.proto\x12\x06server\":\n\x16StandardServerResponse\x12\x0f\n\x07success\x18\x01 \x01(\x08\x12\x0f\n\x07message\x18\x02 \x01(\t\"5\n\x0fUserAuthRequest\x12\x10\n\x08username\x18\x01 \x01(\t\x12\x10\n\x08password\x18\x02 \x01(\t\"R\n\x10UserLoginSuccess\x12\x0f\n\x07success\x18\x01 \x01(\x08\x12\x0f\n\x07message\x18\x02 \x01(\t\x12\x1c\n\x14unread_message_count\x18\x03 \x01(\x05\"\x7f\n\x11UserLoginResponse\x12+\n\x07success\x18\x01 \x01(\x0b\x32\x18.server.UserLoginSuccessH\x00\x12\x31\n\x07\x66\x61ilure\x18\x02 \x01(\x0b\x32\x1e.server.StandardServerResponseH\x00\x42\n\n\x08response\"%\n\x11UserLogoutRequest\x12\x10\n\x08username\x18\x01 \x01(\t\"B\n\rListUsernames\x12\x0f\n\x07success\x18\x01 \x01(\x08\x12\x0f\n\x07message\x18\x02 \x01(\t\x12\x0f\n\x07matches\x18\x03 \x03(\t\"0\n\x14ListUsernamesRequest\x12\x18\n\x10username_pattern\x18\x01 \x01(\t\"\x80\x01\n\x15ListUsernamesResponse\x12(\n\x07success\x18\x01 \x01(\x0b\x32\x15.server.ListUsernamesH\x00\x12\x31\n\x07\x66\x61ilure\x18\x02 \x01(\x0b\x32\x1e.server.StandardServerResponseH\x00\x42\n\n\x08response\"\x92\x01\n\x12SendMessageRequest\x12\x17\n\x0fsender_username\x18\x01 \x01(\t\x12\x17\n\x0ftarget_username\x18\x02 \x01(\t\x12\x11\n\ttimestamp\x18\x03 \x01(\x05\x12\x0f\n\x07message\x18\x04 \x01(\t\x12\x17\n\nmessage_id\x18\x05 \x01(\tH\x00\x88\x01\x01\x42\r\n\x0b_message_id\"E\n\x15RegisterClientRequest\x12\x10\n\x08username\x18\x01 \x01(\t\x12\x0c\n\x04host\x18\x02 \x01(\t\x12\x0c\n\x04port\x18\x03 \x01(\x05\"=\n\x13ReadMessagesRequest\x12\x10\n\x08username\x18\x01 \x01(\t\x12\x14\n\x0cnum_messages\x18\x02 \x01(\x05\"W\n\rUnreadMessage\x12\x12\n\nmessage_id\x18\x01 \x01(\t\x12\x0e\n\x06sender\x18\x02 \x01(\t\x12\x11\n\ttimestamp\x18\x03 \x01(\x05\x12\x0f\n\x07message\x18\x04 \x01(\t\"X\n\x0bReadMessage\x12\x0f\n\x07success\x18\x01 \x01(\x08\x12\x0f\n\x07message\x18\x02 \x01(\t\x12\'\n\x08messages\x18\x03 \x03(\x0b\x32\x15.server.UnreadMessage\"|\n\x13ReadMessageResponse\x12&\n\x07success\x18\x01 \x01(\x0b\x32\x13.server.ReadMessageH\x00\x12\x31\n\x07\x66\x61ilure\x18\x02 \x01(\x0b\x32\x1e.server.StandardServerResponseH\x00\x42\n\n\x08response\"(\n\x14\x44\x65leteAccountRequest\x12\x10\n\x08username\x18\x01 \x01(\t\"C\n\x14\x44\x65leteMessageRequest\x12\x17\n\x0fsender_username\x18\x01 \x01(\t\x12\x12\n\nmessage_id\x18\x02 \x01(\t\",\n\x18\x46\x65tchSentMessagesRequest\x12\x10\n\x08username\x18\x01 \x01(\t\"P\n\x0cSentMessages\x12\x17\n\x0ftarget_username\x18\x01 \x01(\t\x12\'\n\x08messages\x18\x02 \x03(\x0b\x32\x15.server.UnreadMessage\"d\n\x13\x46\x65tchedSentMessages\x12\x0f\n\x07success\x18\x01 \x01(\x08\x12\x0f\n\x07message\x18\x02 \x01(\t\x12+\n\rsent_messages\x18\x03 \x03(\x0b\x32\x14.server.SentMessages\"\x8a\x01\n\x19\x46\x65tchSentMessagesResponse\x12.\n\x07success\x18\x01 \x01(\x0b\x32\x1b.server.FetchedSentMessagesH\x00\x12\x31\n\x07\x66\x61ilure\x18\x02 \x01(\x0b\x32\x1e.server.StandardServerResponseH\x00\x42\n\n\x08response2\xf9\x05\n\x06Server\x12\x41\n\x06Signup\x12\x17.server.UserAuthRequest\x1a\x1e.server.StandardServerResponse\x12;\n\x05Login\x12\x17.server.UserAuthRequest\x1a\x19.server.UserLoginResponse\x12\x43\n\x06Logout\x12\x19.server.UserLogoutRequest\x1a\x1e.server.StandardServerResponse\x12L\n\rListUsernames\x12\x1c.server.ListUsernamesRequest\x1a\x1d.server.ListUsernamesResponse\x12I\n\x0bSendMessage\x12\x1a.server.SendMessageRequest\x1a\x1e.server.StandardServerResponse\x12O\n\x0eRegisterClient\x12\x1d.server.RegisterClientRequest\x1a\x1e.server.StandardServerResponse\x12H\n\x0cReadMessages\x12\x1b.server.ReadMessagesRequest\x1a\x1b.server.ReadMessageResponse\x12M\n\rDeleteAccount\x12\x1c.server.DeleteAccountRequest\x1a\x1e.server.StandardServerResponse\x12M\n\rDeleteMessage\x12\x1c.server.DeleteMessageRequest\x1a\x1e.server.StandardServerResponse\x12X\n\x11\x46\x65tchSentMessages\x12 .server.FetchSentMessagesRequest\x1a!.server.FetchSentMessagesResponseb\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x0cserver.proto\x12\x06server\":\n\x16StandardServerResponse\x12\x0f\n\x07success\x18\x01 \x01(\x08\x12\x0f\n\x07message\x18\x02 \x01(\t\"J\n\x0fUserAuthRequest\x12\x10\n\x08username\x18\x01 \x01(\t\x12\x10\n\x08password\x18\x02 \x01(\t\x12\x13\n\x0b\x66rom_client\x18\x03 \x01(\x08\"R\n\x10UserLoginSuccess\x12\x0f\n\x07success\x18\x01 \x01(\x08\x12\x0f\n\x07message\x18\x02 \x01(\t\x12\x1c\n\x14unread_message_count\x18\x03 \x01(\x05\"\x7f\n\x11UserLoginResponse\x12+\n\x07success\x18\x01 \x01(\x0b\x32\x18.server.UserLoginSuccessH\x00\x12\x31\n\x07\x66\x61ilure\x18\x02 \x01(\x0b\x32\x1e.server.StandardServerResponseH\x00\x42\n\n\x08response\":\n\x11UserLogoutRequest\x12\x10\n\x08username\x18\x01 \x01(\t\x12\x13\n\x0b\x66rom_client\x18\x02 \x01(\x08\"B\n\rListUsernames\x12\x0f\n\x07success\x18\x01 \x01(\x08\x12\x0f\n\x07message\x18\x02 \x01(\t\x12\x0f\n\x07matches\x18\x03 \x03(\t\"0\n\x14ListUsernamesRequest\x12\x18\n\x10username_pattern\x18\x01 \x01(\t\"\x80\x01\n\x15ListUsernamesResponse\x12(\n\x07success\x18\x01 \x01(\x0b\x32\x15.server.ListUsernamesH\x00\x12\x31\n\x07\x66\x61ilure\x18\x02 \x01(\x0b\x32\x1e.server.StandardServerResponseH\x00\x42\n\n\x08response\"\xa7\x01\n\x12SendMessageRequest\x12\x17\n\x0fsender_username\x18\x01 \x01(\t\x12\x17\n\x0ftarget_username\x18\x02 \x01(\t\x12\x11\n\ttimestamp\x18\x03 \x01(\x05\x12\x0f\n\x07message\x18\x04 \x01(\t\x12\x17\n\nmessage_id\x18\x05 \x01(\tH\x00\x88\x01\x01\x12\x13\n\x0b\x66rom_client\x18\x06 \x01(\x08\x42\r\n\x0b_message_id\"Z\n\x15RegisterClientRequest\x12\x10\n\x08username\x18\x01 \x01(\t\x12\x0c\n\x04host\x18\x02 \x01(\t\x12\x0c\n\x04port\x18\x03 \x01(\x05\x12\x13\n\x0b\x66rom_client\x18\x04 \x01(\x08\"R\n\x13ReadMessagesRequest\x12\x10\n\x08username\x18\x01 \x01(\t\x12\x14\n\x0cnum_messages\x18\x02 \x01(\x05\x12\x13\n\x0b\x66rom_client\x18\x03 \x01(\x08\"W\n\rUnreadMessage\x12\x12\n\nmessage_id\x18\x01 \x01(\t\x12\x0e\n\x06sender\x18\x02 \x01(\t\x12\x11\n\ttimestamp\x18\x03 \x01(\x05\x12\x0f\n\x07message\x18\x04 \x01(\t\"X\n\x0bReadMessage\x12\x0f\n\x07success\x18\x01 \x01(\x08\x12\x0f\n\x07message\x18\x02 \x01(\t\x12\'\n\x08messages\x18\x03 \x03(\x0b\x32\x15.server.UnreadMessage\"|\n\x13ReadMessageResponse\x12&\n\x07success\x18\x01 \x01(\x0b\x32\x13.server.ReadMessageH\x00\x12\x31\n\x07\x66\x61ilure\x18\x02 \x01(\x0b\x32\x1e.server.StandardServerResponseH\x00\x42\n\n\x08response\"=\n\x14\x44\x65leteAccountRequest\x12\x10\n\x08username\x18\x01 \x01(\t\x12\x13\n\x0b\x66rom_client\x18\x02 \x01(\x08\"X\n\x14\x44\x65leteMessageRequest\x12\x17\n\x0fsender_username\x18\x01 \x01(\t\x12\x12\n\nmessage_id\x18\x02 \x01(\t\x12\x13\n\x0b\x66rom_client\x18\x03 \x01(\x08\",\n\x18\x46\x65tchSentMessagesRequest\x12\x10\n\x08username\x18\x01 \x01(\t\"P\n\x0cSentMessages\x12\x17\n\x0ftarget_username\x18\x01 \x01(\t\x12\'\n\x08messages\x18\x02 \x03(\x0b\x32\x15.server.UnreadMessage\"d\n\x13\x46\x65tchedSentMessages\x12\x0f\n\x07success\x18\x01 \x01(\x08\x12\x0f\n\x07message\x18\x02 \x01(\t\x12+\n\rsent_messages\x18\x03 \x03(\x0b\x32\x14.server.SentMessages\"\x8a\x01\n\x19\x46\x65tchSentMessagesResponse\x12.\n\x07success\x18\x01 \x01(\x0b\x32\x1b.server.FetchedSentMessagesH\x00\x12\x31\n\x07\x66\x61ilure\x18\x02 \x01(\x0b\x32\x1e.server.StandardServerResponseH\x00\x42\n\n\x08response2\xf9\x05\n\x06Server\x12\x41\n\x06Signup\x12\x17.server.UserAuthRequest\x1a\x1e.server.StandardServerResponse\x12;\n\x05Login\x12\x17.server.UserAuthRequest\x1a\x19.server.UserLoginResponse\x12\x43\n\x06Logout\x12\x19.server.UserLogoutRequest\x1a\x1e.server.StandardServerResponse\x12L\n\rListUsernames\x12\x1c.server.ListUsernamesRequest\x1a\x1d.server.ListUsernamesResponse\x12I\n\x0bSendMessage\x12\x1a.server.SendMessageRequest\x1a\x1e.server.StandardServerResponse\x12O\n\x0eRegisterClient\x12\x1d.server.RegisterClientRequest\x1a\x1e.server.StandardServerResponse\x12H\n\x0cReadMessages\x12\x1b.server.ReadMessagesRequest\x1a\x1b.server.ReadMessageResponse\x12M\n\rDeleteAccount\x12\x1c.server.DeleteAccountRequest\x1a\x1e.server.StandardServerResponse\x12M\n\rDeleteMessage\x12\x1c.server.DeleteMessageRequest\x1a\x1e.server.StandardServerResponse\x12X\n\x11\x46\x65tchSentMessages\x12 .server.FetchSentMessagesRequest\x1a!.server.FetchSentMessagesResponseb\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -34,43 +34,43 @@ if not _descriptor._USE_C_DESCRIPTORS:
   _globals['_STANDARDSERVERRESPONSE']._serialized_start=24
   _globals['_STANDARDSERVERRESPONSE']._serialized_end=82
   _globals['_USERAUTHREQUEST']._serialized_start=84
-  _globals['_USERAUTHREQUEST']._serialized_end=137
-  _globals['_USERLOGINSUCCESS']._serialized_start=139
-  _globals['_USERLOGINSUCCESS']._serialized_end=221
-  _globals['_USERLOGINRESPONSE']._serialized_start=223
-  _globals['_USERLOGINRESPONSE']._serialized_end=350
-  _globals['_USERLOGOUTREQUEST']._serialized_start=352
-  _globals['_USERLOGOUTREQUEST']._serialized_end=389
-  _globals['_LISTUSERNAMES']._serialized_start=391
-  _globals['_LISTUSERNAMES']._serialized_end=457
-  _globals['_LISTUSERNAMESREQUEST']._serialized_start=459
-  _globals['_LISTUSERNAMESREQUEST']._serialized_end=507
-  _globals['_LISTUSERNAMESRESPONSE']._serialized_start=510
-  _globals['_LISTUSERNAMESRESPONSE']._serialized_end=638
-  _globals['_SENDMESSAGEREQUEST']._serialized_start=641
-  _globals['_SENDMESSAGEREQUEST']._serialized_end=787
-  _globals['_REGISTERCLIENTREQUEST']._serialized_start=789
-  _globals['_REGISTERCLIENTREQUEST']._serialized_end=858
-  _globals['_READMESSAGESREQUEST']._serialized_start=860
-  _globals['_READMESSAGESREQUEST']._serialized_end=921
-  _globals['_UNREADMESSAGE']._serialized_start=923
-  _globals['_UNREADMESSAGE']._serialized_end=1010
-  _globals['_READMESSAGE']._serialized_start=1012
-  _globals['_READMESSAGE']._serialized_end=1100
-  _globals['_READMESSAGERESPONSE']._serialized_start=1102
-  _globals['_READMESSAGERESPONSE']._serialized_end=1226
-  _globals['_DELETEACCOUNTREQUEST']._serialized_start=1228
-  _globals['_DELETEACCOUNTREQUEST']._serialized_end=1268
-  _globals['_DELETEMESSAGEREQUEST']._serialized_start=1270
-  _globals['_DELETEMESSAGEREQUEST']._serialized_end=1337
-  _globals['_FETCHSENTMESSAGESREQUEST']._serialized_start=1339
-  _globals['_FETCHSENTMESSAGESREQUEST']._serialized_end=1383
-  _globals['_SENTMESSAGES']._serialized_start=1385
-  _globals['_SENTMESSAGES']._serialized_end=1465
-  _globals['_FETCHEDSENTMESSAGES']._serialized_start=1467
-  _globals['_FETCHEDSENTMESSAGES']._serialized_end=1567
-  _globals['_FETCHSENTMESSAGESRESPONSE']._serialized_start=1570
-  _globals['_FETCHSENTMESSAGESRESPONSE']._serialized_end=1708
-  _globals['_SERVER']._serialized_start=1711
-  _globals['_SERVER']._serialized_end=2472
+  _globals['_USERAUTHREQUEST']._serialized_end=158
+  _globals['_USERLOGINSUCCESS']._serialized_start=160
+  _globals['_USERLOGINSUCCESS']._serialized_end=242
+  _globals['_USERLOGINRESPONSE']._serialized_start=244
+  _globals['_USERLOGINRESPONSE']._serialized_end=371
+  _globals['_USERLOGOUTREQUEST']._serialized_start=373
+  _globals['_USERLOGOUTREQUEST']._serialized_end=431
+  _globals['_LISTUSERNAMES']._serialized_start=433
+  _globals['_LISTUSERNAMES']._serialized_end=499
+  _globals['_LISTUSERNAMESREQUEST']._serialized_start=501
+  _globals['_LISTUSERNAMESREQUEST']._serialized_end=549
+  _globals['_LISTUSERNAMESRESPONSE']._serialized_start=552
+  _globals['_LISTUSERNAMESRESPONSE']._serialized_end=680
+  _globals['_SENDMESSAGEREQUEST']._serialized_start=683
+  _globals['_SENDMESSAGEREQUEST']._serialized_end=850
+  _globals['_REGISTERCLIENTREQUEST']._serialized_start=852
+  _globals['_REGISTERCLIENTREQUEST']._serialized_end=942
+  _globals['_READMESSAGESREQUEST']._serialized_start=944
+  _globals['_READMESSAGESREQUEST']._serialized_end=1026
+  _globals['_UNREADMESSAGE']._serialized_start=1028
+  _globals['_UNREADMESSAGE']._serialized_end=1115
+  _globals['_READMESSAGE']._serialized_start=1117
+  _globals['_READMESSAGE']._serialized_end=1205
+  _globals['_READMESSAGERESPONSE']._serialized_start=1207
+  _globals['_READMESSAGERESPONSE']._serialized_end=1331
+  _globals['_DELETEACCOUNTREQUEST']._serialized_start=1333
+  _globals['_DELETEACCOUNTREQUEST']._serialized_end=1394
+  _globals['_DELETEMESSAGEREQUEST']._serialized_start=1396
+  _globals['_DELETEMESSAGEREQUEST']._serialized_end=1484
+  _globals['_FETCHSENTMESSAGESREQUEST']._serialized_start=1486
+  _globals['_FETCHSENTMESSAGESREQUEST']._serialized_end=1530
+  _globals['_SENTMESSAGES']._serialized_start=1532
+  _globals['_SENTMESSAGES']._serialized_end=1612
+  _globals['_FETCHEDSENTMESSAGES']._serialized_start=1614
+  _globals['_FETCHEDSENTMESSAGES']._serialized_end=1714
+  _globals['_FETCHSENTMESSAGESRESPONSE']._serialized_start=1717
+  _globals['_FETCHSENTMESSAGESRESPONSE']._serialized_end=1855
+  _globals['_SERVER']._serialized_start=1858
+  _globals['_SERVER']._serialized_end=2619
 # @@protoc_insertion_point(module_scope)
