@@ -36,7 +36,7 @@ Clicking the delete message button will take the user to a screen which displays
 The logout and delete account button upon being clicked will close the GUI and accordingly log the user out or delete the user’s account. 
 
 # Additional Documentation
-Additional documentation for this project can be found here: https://docs.google.com/document/d/16wj4I3U3kjUVvdADQrB6-EC_sEv5Xo_xCDWyz_uL7R0/edit?tab=t.0
+Additional documentation for this project can be found here: [https://docs.google.com/document/d/16wj4I3U3kjUVvdADQrB6-EC_sEv5Xo_xCDWyz_uL7R0/edit?tab=t.0](https://docs.google.com/document/d/1pfRI9iEIFDHqc4yO8bJTf63r2nZSx0YVtV2cfSPOstk/edit?tab=t.0)
 
 # Running Tests
 To run our test suite, cd into the tests folder and run ```pytest``` in the terminal.
