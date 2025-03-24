@@ -18,9 +18,12 @@ SERVER_HOST_2 = "{SERVER 2 HOST HERE}"
 SERVER_PORT_2 = {SERVER 2 PORT HERE}
 CLIENT_HOST = "{CLIENT HOST HERE}"
 ```
-The server host and port should be the host and port that the server is accessible from. The client host should be the host name of the machine that the client is running on.
+The server hosts and ports should be the hosts and ports that the corresponding server is accessible from. The client host should be the host name of the machine that the client is running on.
 
-Once the above configuration steps are complete, you should be able to run the project! To run the server, cd into the server folder and run ```driver.py```. To run the client, cd into the client folder and run ```ui.py```.
+Once the above configuration steps are complete, you should be able to run the project! 
+To run the 3 servers, cd into the server folder and run ```python3 driver.py <server_id> <optional: db_path>```. The server id is the id of the server you would like to run (must either be 0, 1, or 2). The optional db_path parameter allows the user to specify a custom path to the database file for the server, however we recommend not using the optional db_path parameter unless there is a very strong, specific reason for doing so. If a db_path is not provided, the servers will default to server 0 using the db_0 file, server 1 using the db_1 file, and server 2 using the db_2 file. 
+
+To run the client, cd into the client folder and run ```ui.py```.
 
 # Using the GUI
 Upon running ```driver.py``` and ```ui.py```, the GUI will then pop up with an initial login/signup page where the user can input a username or password and then click either login or signup. Once logged in, a new "starting" screen will pop up with a main text box, and buttons corresponding to actions the user can do. 
