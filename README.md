@@ -10,8 +10,12 @@ Next, make sure Tkinter is downloaded. Tkinter may not download via pip3, so it 
 
 Also in the root directory, create a .env file, which is where we store sensitive configuration details. You will need the following configuration variables:
 ```
-SERVER_HOST = "{SERVER HOST HERE}"
-SERVER_PORT = {SERVER PORT HERE}
+SERVER_HOST_0 = "{SERVER 0 HOST HERE}"
+SERVER_PORT_0 = {SERVER 0 PORT HERE}
+SERVER_HOST_1 = "{SERVER 1 HOST HERE}"
+SERVER_PORT_1 = {SERVER 1 PORT HERE}
+SERVER_HOST_2 = "{SERVER 2 HOST HERE}"
+SERVER_PORT_2 = {SERVER 2 PORT HERE}
 CLIENT_HOST = "{CLIENT HOST HERE}"
 ```
 The server host and port should be the host and port that the server is accessible from. The client host should be the host name of the machine that the client is running on.
