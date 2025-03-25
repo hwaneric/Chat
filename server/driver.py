@@ -75,6 +75,11 @@ def connect(server_object):
                 time.sleep(retry_delay)
 
         print(f"Connected to server {peer_id}")
+
+    server_object.local_alive_servers = set(server_object.server_stubs.keys())
+    server_object.global_alive_servers = set(server_object.server_stubs.keys())
+    server_object.local_alive_servers.add(server_object.id)
+    server_object.global_alive_servers.add(server_object.id)
     
     print("Connected to all servers")          
 
@@ -86,8 +91,10 @@ def initialize(id, db_path):
     # Set Server 0 As Leader
     if id == 0:
         server_object.is_leader = True
+        server_object.current_leader = 0
         print("Server is leader")
     else:
+        server_object.current_leader = 0
         print("Server is not leader")
 
     # Connect to other servers in background thread

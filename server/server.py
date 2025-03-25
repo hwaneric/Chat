@@ -41,11 +41,15 @@ class Server(server_pb2_grpc.ServerServicer):
             self.db_path = self._get_default_db_pathname(id)
         print(self.db_path)
 
+
+        self.current_leader = None
+        
         self.heartbeat_interval = 2  
         self.heartbeat_timeout = 6
         self.last_heartbeat_received = {}
         self.dead_servers = set()
-
+        self.local_alive_servers = set()
+        self.global_alive_servers = set()
 
     def Heartbeat(self, request_iterator, context):
         debouncer = Debouncer(
@@ -56,18 +60,73 @@ class Server(server_pb2_grpc.ServerServicer):
         for request in request_iterator:
             server_id = request.server_id
             timestamp = request.timestamp
-            print(f"[Monitor] Received heartbeat from server {server_id} at time {timestamp}")
+            # print(f"[Monitor] Received heartbeat from server {server_id} at time {timestamp}")
 
             # Reset the last heartbeat received time for this server
             debouncer()
             
         return server_pb2.HeartbeatResponse(acknowledged=True)
     
+    def PingAlive(self, request, context):
+        is_dead = request.server_id not in self.local_alive_servers
+        return server_pb2.AliveResponse(is_dead=is_dead)
+    
     def _handle_server_death(self, server_id):
         '''
             Handles the death of a server 
         '''
-        print(f"[Monitor] Server {server_id} is DEAD at time", time.time())
+        print(f"[Monitor] Suspecting Server {server_id} is DEAD at time", time.time())
+
+        if server_id not in self.local_alive_servers:
+            return  # Already handled
+
+        self.local_alive_servers.remove(server_id)
+
+        MAX_RETRIES = 3
+        RETRY_DELAY = 1.5  # seconds
+
+        for attempt in range(MAX_RETRIES):
+            agreement = []
+            responders = 0
+
+            for peer_id, stub in self.server_stubs.items():
+                if peer_id == server_id or peer_id in self.dead_servers:
+                    continue
+                try:
+                    response = stub.PingAlive(server_pb2.AliveQuery(server_id=server_id))
+                    responders += 1
+                    agreement.append(response.is_dead)
+                except Exception as e:
+                    print(f"[Consensus] Could not reach server {peer_id}: {e}")
+
+            if responders == 0:
+                print(f"[Consensus] No peers left to confirm death of server {server_id}. Assuming it's dead.")
+                self.global_alive_servers.discard(server_id)
+                self.dead_servers.add(server_id)
+                break
+
+            elif all(agreement):
+                print(f"[Consensus] All reachable peers agree server {server_id} is dead.")
+                self.global_alive_servers.discard(server_id)
+                self.dead_servers.add(server_id)
+                break
+
+            # Peers not ready yet, wait and try again
+            time.sleep(RETRY_DELAY)
+        else:
+            # If we exhaust retries without reaching consensus
+            print(f"[Consensus] Could not reach agreement on server {server_id}'s death after {MAX_RETRIES} retries.")
+            return
+
+        if server_id == self.current_leader:
+            print(f"[Leader Election] Leader {server_id} has died. Electing new leader...")
+            new_leader = min(self.global_alive_servers)
+            self.current_leader = new_leader
+            self.is_leader = (self.id == new_leader)
+            if self.is_leader:
+                print(f"[Leader Election] I am the new leader (Server {self.id})")
+            else:
+                print(f"[Leader Election] New leader is Server {new_leader}")
     
     def begin_heartbeats(self, server_id):
         '''
