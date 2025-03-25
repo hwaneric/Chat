@@ -5,7 +5,7 @@ import threading
 from dotenv import load_dotenv
 import os
 
-load_dotenv()
+load_dotenv(override=True)
 SERVER_HOST = os.getenv("SERVER_HOST_0")
 SERVER_PORT = int(os.getenv("SERVER_PORT_0"))
 CLIENT_HOST = os.getenv("CLIENT_HOST")

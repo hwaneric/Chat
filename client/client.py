@@ -18,7 +18,7 @@ import client_listener_pb2_grpc
 from dotenv import load_dotenv
 import os
 
-load_dotenv()
+load_dotenv(override=True)
 
 class Client:
     def __init__(self, server_host, server_port, client_host, username=None):

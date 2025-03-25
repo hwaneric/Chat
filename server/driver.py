@@ -4,8 +4,6 @@ import grpc
 import sys
 from server import Server
 from dotenv import load_dotenv
-
-load_dotenv(dotenv_path='../.env')
 sys.path.append('../protos')
 import server_pb2 
 import server_pb2_grpc
@@ -15,6 +13,7 @@ from account_management import check_if_online, create_account, fetch_sent_messa
 import threading
 import os
 
+load_dotenv(override=True)
 
 def serve(server_object):
     '''
