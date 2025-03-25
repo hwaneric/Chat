@@ -60,7 +60,8 @@ def connect(server_object):
                 # channel = grpc.insecure_channel(f"{host}:{port}")
                 stub = server_pb2_grpc.ServerStub(channel)
                 server_object.server_stubs[i] = stub
-                    
+                server_object.last_heartbeat_received[i] = time.time()
+
             except grpc.FutureTimeoutError:
                 # Connection Attempt Timed Out
                 if attempt == MAX_RETRIES - 1:
@@ -71,9 +72,7 @@ def connect(server_object):
 
         print(f"Connected to server {i}")
     
-    print("Connected to all servers")
-    
-        
+    print("Connected to all servers")          
 
 def initialize(id, db_path):
     print("host and port", f"SERVER_HOST_{id}", f"SERVER_PORT_{id}")
@@ -92,8 +91,6 @@ def initialize(id, db_path):
 
     serve(server_object)
     server_object.cleanup()
-
-
 
 
 if __name__ == '__main__':

@@ -84,6 +84,11 @@ class ServerStub(object):
                 request_serializer=server__pb2.FetchSentMessagesRequest.SerializeToString,
                 response_deserializer=server__pb2.FetchSentMessagesResponse.FromString,
                 _registered_method=True)
+        self.Heartbeat = channel.unary_unary(
+                '/server.Server/Heartbeat',
+                request_serializer=server__pb2.HeartbeatRequest.SerializeToString,
+                response_deserializer=server__pb2.HeartbeatResponse.FromString,
+                _registered_method=True)
 
 
 class ServerServicer(object):
@@ -149,6 +154,12 @@ class ServerServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def Heartbeat(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
 
 def add_ServerServicer_to_server(servicer, server):
     rpc_method_handlers = {
@@ -201,6 +212,11 @@ def add_ServerServicer_to_server(servicer, server):
                     servicer.FetchSentMessages,
                     request_deserializer=server__pb2.FetchSentMessagesRequest.FromString,
                     response_serializer=server__pb2.FetchSentMessagesResponse.SerializeToString,
+            ),
+            'Heartbeat': grpc.unary_unary_rpc_method_handler(
+                    servicer.Heartbeat,
+                    request_deserializer=server__pb2.HeartbeatRequest.FromString,
+                    response_serializer=server__pb2.HeartbeatResponse.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -473,6 +489,33 @@ class Server(object):
             '/server.Server/FetchSentMessages',
             server__pb2.FetchSentMessagesRequest.SerializeToString,
             server__pb2.FetchSentMessagesResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def Heartbeat(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/server.Server/Heartbeat',
+            server__pb2.HeartbeatRequest.SerializeToString,
+            server__pb2.HeartbeatResponse.FromString,
             options,
             channel_credentials,
             insecure,

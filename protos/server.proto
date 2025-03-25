@@ -13,6 +13,7 @@ service Server {
     rpc DeleteAccount(DeleteAccountRequest) returns (StandardServerResponse);
     rpc DeleteMessage(DeleteMessageRequest) returns (StandardServerResponse);
     rpc FetchSentMessages(FetchSentMessagesRequest) returns (FetchSentMessagesResponse);
+    rpc Heartbeat(HeartbeatRequest) returns (HeartbeatResponse);
 }
 
 message StandardServerResponse {
@@ -135,4 +136,13 @@ message FetchSentMessagesResponse {
         FetchedSentMessages success = 1;
         StandardServerResponse failure = 2;
     }
+}
+
+message HeartbeatRequest {
+    int32 server_id = 1;
+    int64 timestamp = 2;
+}
+
+message HeartbeatResponse {
+    bool acknowledged = 1;
 }

@@ -39,7 +39,49 @@ class Server(server_pb2_grpc.ServerServicer):
         else:
             self.db_path = self._get_default_db_pathname(id)
         print(self.db_path)
+
+        self.heartbeat_interval = 2  
+        self.heartbeat_timeout = 6
+        self.last_heartbeat_received = {}
+        self.dead_servers = set()
+
+        threading.Thread(target=self._send_heartbeats, daemon=True).start()
+        threading.Thread(target=self._monitor_heartbeats, daemon=True).start()
+
+    def Heartbeat(self, request, context):
+        self.last_heartbeat_received[request.server_id] = time.time()
+        return server_pb2.HeartbeatResponse(acknowledged=True)
     
+    def _send_heartbeats(self):
+        while True:
+            for server_id, stub in self.server_stubs.items():
+                if server_id in self.dead_servers:
+                    continue 
+                try:
+                    request = server_pb2.HeartbeatRequest(
+                        server_id=self.id,
+                        timestamp=int(time.time())
+                    )
+                    stub.Heartbeat(request)
+                except Exception as e:
+                    if e.code() == grpc.StatusCode.UNAVAILABLE:
+                        print(f"[Heartbeat] Server {server_id} is unreachable.")
+                    else:
+                        print(f"[Heartbeat] Failed to send to {server_id}: {e}")
+            time.sleep(self.heartbeat_interval)
+
+    def _monitor_heartbeats(self):
+        time.sleep(5)
+        while True:
+            now = time.time()
+            for server_id in self.server_stubs:
+                if server_id in self.dead_servers:
+                    continue 
+                last = self.last_heartbeat_received.get(server_id, 0)
+                if now - last > self.heartbeat_timeout:
+                    print(f"[Monitor] Server {server_id} is considered DEAD (last seen {now - last:.1f}s ago)")
+                    self.dead_servers.add(server_id)
+            time.sleep(self.heartbeat_interval)
 
     def Signup(self, request, context):
         username = request.username
