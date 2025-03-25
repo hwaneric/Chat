@@ -13,6 +13,10 @@ service Server {
     rpc DeleteAccount(DeleteAccountRequest) returns (StandardServerResponse);
     rpc DeleteMessage(DeleteMessageRequest) returns (StandardServerResponse);
     rpc FetchSentMessages(FetchSentMessagesRequest) returns (FetchSentMessagesResponse);
+    rpc Heartbeat(stream HeartbeatRequest) returns (HeartbeatResponse);
+    rpc CurrentLeader(CurrentLeaderRequest) returns (CurrentLeaderResponse);
+    rpc ConfirmServerDeath(StatusRequest) returns (StatusResponse);
+
 }
 
 message StandardServerResponse {
@@ -135,4 +139,29 @@ message FetchSentMessagesResponse {
         FetchedSentMessages success = 1;
         StandardServerResponse failure = 2;
     }
+}
+
+message HeartbeatRequest {
+    int32 server_id = 1;
+    int64 timestamp = 2;
+}
+
+message HeartbeatResponse {
+    bool acknowledged = 1;
+}
+
+message CurrentLeaderRequest {
+    // This message can be empty, as we are just using it to trigger the server to send back the current leader
+}
+
+message CurrentLeaderResponse {
+    int32 leader = 1;
+}
+
+message StatusRequest {
+    int32 server_id = 1;
+}
+
+message StatusResponse {
+    bool is_dead = 1; // true if the server is dead, false if it is alive
 }

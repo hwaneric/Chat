@@ -1,4 +1,5 @@
 from concurrent import futures
+from debouncer import Debouncer
 import time
 import grpc
 import sys
@@ -9,12 +10,8 @@ import client_listener_pb2
 import client_listener_pb2_grpc
 from account_management import check_if_online, create_account, fetch_sent_messages, list_accounts, login, logout, logout_all_users, read_messages, send_offline_message, delete_account, delete_message
 import threading
-
-from dotenv import load_dotenv
 import os
-load_dotenv()
-HOST = os.getenv("SERVER_HOST")
-PORT = int(os.getenv("SERVER_PORT"))
+
 
 class Server(server_pb2_grpc.ServerServicer):
     def __init__(self, id, host, port, db_path=None):
@@ -39,8 +36,145 @@ class Server(server_pb2_grpc.ServerServicer):
         else:
             self.db_path = self._get_default_db_pathname(id)
         print(self.db_path)
-    
 
+
+        self.current_leader = None
+        
+        self.heartbeat_interval = 2  
+        self.heartbeat_timeout = 6
+        self.last_heartbeat_received = {}
+        self.local_alive_servers = set([0, 1, 2])    # Set of servers that this server believes are alive
+        self.global_alive_servers = set([0, 1, 2])   # Set of servers that all servers believe are alive
+
+    def Heartbeat(self, request_iterator, context):
+        debouncer = Debouncer(
+            lambda: self._handle_server_death(server_id),
+            self.heartbeat_timeout
+        )
+
+        for request in request_iterator:
+            server_id = request.server_id
+            timestamp = request.timestamp
+            # print(f"[Monitor] Received heartbeat from server {server_id} at time {timestamp}")
+
+            # Reset the last heartbeat received time for this server
+            debouncer()
+            
+        return server_pb2.HeartbeatResponse(acknowledged=True)
+    
+    def ConfirmServerDeath(self, request, context):
+        '''
+            Checks if the current server believes the specified server is alive or dead.
+            This request is only received from the other servers when they believe a server to be dead. 
+            As a result, if the local server believes the specified server to be dead, it can be safely assumed
+            that all other servers also believe it to be dead.
+        '''
+        server_id = request.server_id
+        is_dead = server_id not in self.local_alive_servers
+
+        # If the server is believed to be dead locally, it is also dead globally
+        if is_dead:
+            self.global_alive_servers.discard(server_id)
+            
+            # Elect new leader if necessary
+            if server_id == self.current_leader:
+                self._elect_new_leader(server_id)
+
+        return server_pb2.StatusResponse(is_dead=is_dead)
+    
+    def _handle_server_death(self, server_id):
+        '''
+            Handles the death of a server 
+        '''
+        print(f"[Monitor] Suspecting Server {server_id} is DEAD at time", time.time())
+
+        if server_id not in self.local_alive_servers:
+            return  # Already handled
+
+        # Locally, treat server as dead
+        self.local_alive_servers.remove(server_id)
+        self.server_stubs.pop(server_id, None)
+
+        # Check with all other servers to see if they agree that this server is dead
+        agreement = []
+        for peer_id, stub in self.server_stubs.items():
+            # Skip yourself and dead servers
+            if peer_id == server_id or peer_id not in self.local_alive_servers:
+                continue
+
+            try:
+                response = stub.CheckStatus(server_pb2.StatusRequest(server_id=server_id))
+                agreement.append(response.is_dead)
+            except Exception as e:
+                print(f"[Consensus] Could not reach server {peer_id}: {e}")
+
+        # Check if all reachable peers agree on the server's death
+        num_responders = len(agreement)
+        if num_responders == 0 or all(agreement):
+            print(f"[Consensus] All reachable peers agree server {server_id} is dead.")
+            self.global_alive_servers.discard(server_id)
+            
+            # Elect new leader if necessary
+            if server_id == self.current_leader:
+                self._elect_new_leader(server_id)
+
+
+    def _elect_new_leader(self, server_id):
+        print(f"[Leader Election] Leader {server_id} has died. Electing new leader...")
+        new_leader = min(self.global_alive_servers)
+        self.current_leader = new_leader
+        self.is_leader = (self.id == new_leader)
+        if self.is_leader:
+            print(f"[Leader Election] I am the new leader (Server {self.id})")
+        else:
+            print(f"[Leader Election] New leader is Server {new_leader}")
+    
+    def begin_heartbeats(self, server_id):
+        '''
+            Begins sending heartbeats to specified server
+        '''
+        try:
+            if server_id not in self.server_stubs:
+                print(f"[Heartbeat] Server {server_id} is not connected.")
+                return
+            
+            if server_id not in self.local_alive_servers:
+                print(f"[Heartbeat] Server {server_id} is considered DEAD. Declining to set up heartbeat messages to the server.")
+                return
+            
+            print(f"[Heartbeat] Beginning to send heartbeats to server {server_id} at time", time.time())
+            stub = self.server_stubs[server_id]
+
+            # Begin sending stream of heartbeat messages to the server
+            stub.Heartbeat(self._generate_heartbeat_requests())
+        except grpc.RpcError as e:
+            if e.code() == grpc.StatusCode.UNAVAILABLE:
+                print(f"This is the standard error raised when a server dies and the gRPC connection is lost. We will ignore this error here to stay more authentic to the nature of the assignment (since we assume that we are supposed to be able to handle the silent failure of a server)")
+                return
+            
+            print(f"[Heartbeat] Error sending heartbeat to server {server_id}: {e}")
+        
+    def _generate_heartbeat_requests(self):
+        '''
+            Generates a stream of heartbeat requests to be sent to other servers
+        '''
+        while True:
+            heartbeat_request = server_pb2.HeartbeatRequest(
+                server_id=self.id,
+                timestamp=int(time.time())
+            )
+            yield heartbeat_request
+
+            time.sleep(self.heartbeat_interval)
+
+    def CurrentLeader(self, request, context):
+        '''
+            Returns the current leader of the server cluster
+        '''
+        print(f"Received request to identify current leader from {self.id}")
+        response = server_pb2.CurrentLeaderResponse(leader=self.current_leader)
+        return response
+    
     def Signup(self, request, context):
         username = request.username
         password = request.password

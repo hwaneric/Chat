@@ -10,12 +10,11 @@ import client_listener_pb2
 import client_listener_pb2_grpc
 from account_management import check_if_online, create_account, fetch_sent_messages, list_accounts, login, logout, logout_all_users, read_messages, send_offline_message, delete_account, delete_message
 import threading
-
-from dotenv import load_dotenv
 import os
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
 load_dotenv()
-HOST = os.getenv("SERVER_HOST")
-PORT = int(os.getenv("SERVER_PORT"))
 
 def serve(server_object):
     '''
@@ -42,12 +41,12 @@ def connect(server_object):
     print("Attempting to Connect to other servers")
 
     # Create a channel to connect to other servers
-    for i in range(3):
-        if i == server_object.id:
+    for peer_id in range(3):
+        if peer_id == server_object.id:
             continue
 
-        host = os.getenv(f"SERVER_HOST_{i}")
-        port = int(os.getenv(f"SERVER_PORT_{i}"))
+        host = os.getenv(f"SERVER_HOST_{peer_id}")
+        port = int(os.getenv(f"SERVER_PORT_{peer_id}"))
 
         MAX_RETRIES = 20
         retry_delay = 2  # seconds
@@ -59,21 +58,29 @@ def connect(server_object):
                 grpc.channel_ready_future(channel).result(timeout=retry_delay)
                 # channel = grpc.insecure_channel(f"{host}:{port}")
                 stub = server_pb2_grpc.ServerStub(channel)
-                server_object.server_stubs[i] = stub
-                    
+                server_object.server_stubs[peer_id] = stub
+
+                # Begin sending heartbeats to the connected server
+                threading.Thread(target=server_object.begin_heartbeats, args=(peer_id,), daemon=True).start()
+                server_object.last_heartbeat_received[peer_id] = time.time()
+                break
+
             except grpc.FutureTimeoutError:
                 # Connection Attempt Timed Out
                 if attempt == MAX_RETRIES - 1:
-                    print(f"Failed to connect to server {i} after {MAX_RETRIES} attempts.")
+                    print(f"Failed to connect to server {peer_id} after {MAX_RETRIES} attempts.")
                     break
 
                 time.sleep(retry_delay)
 
-        print(f"Connected to server {i}")
+        print(f"Connected to server {peer_id}")
+
+    server_object.local_alive_servers = set(server_object.server_stubs.keys())
+    server_object.global_alive_servers = set(server_object.server_stubs.keys())
+    server_object.local_alive_servers.add(server_object.id)
+    server_object.global_alive_servers.add(server_object.id)
     
-    print("Connected to all servers")
-    
-        
+    print("Connected to all servers")          
 
 def initialize(id, db_path):
     print("host and port", f"SERVER_HOST_{id}", f"SERVER_PORT_{id}")
@@ -83,8 +90,10 @@ def initialize(id, db_path):
     # Set Server 0 As Leader
     if id == 0:
         server_object.is_leader = True
+        server_object.current_leader = 0
         print("Server is leader")
     else:
+        server_object.current_leader = 0
         print("Server is not leader")
 
     # Connect to other servers in background thread
