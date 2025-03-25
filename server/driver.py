@@ -10,12 +10,11 @@ import client_listener_pb2
 import client_listener_pb2_grpc
 from account_management import check_if_online, create_account, fetch_sent_messages, list_accounts, login, logout, logout_all_users, read_messages, send_offline_message, delete_account, delete_message
 import threading
-
-from dotenv import load_dotenv
 import os
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
 load_dotenv()
-HOST = os.getenv("SERVER_HOST")
-PORT = int(os.getenv("SERVER_PORT"))
 
 def serve(server_object):
     '''

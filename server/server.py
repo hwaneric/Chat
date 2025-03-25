@@ -10,12 +10,8 @@ import client_listener_pb2
 import client_listener_pb2_grpc
 from account_management import check_if_online, create_account, fetch_sent_messages, list_accounts, login, logout, logout_all_users, read_messages, send_offline_message, delete_account, delete_message
 import threading
-
-from dotenv import load_dotenv
 import os
-load_dotenv()
-HOST = os.getenv("SERVER_HOST")
-PORT = int(os.getenv("SERVER_PORT"))
+
 
 class Server(server_pb2_grpc.ServerServicer):
     def __init__(self, id, host, port, db_path=None):
@@ -47,9 +43,8 @@ class Server(server_pb2_grpc.ServerServicer):
         self.heartbeat_interval = 2  
         self.heartbeat_timeout = 6
         self.last_heartbeat_received = {}
-        self.dead_servers = set()
-        self.local_alive_servers = set()
-        self.global_alive_servers = set()
+        self.local_alive_servers = set([0, 1, 2])    # Set of servers that this server believes are alive
+        self.global_alive_servers = set([0, 1, 2])   # Set of servers that all servers believe are alive
 
     def Heartbeat(self, request_iterator, context):
         debouncer = Debouncer(
@@ -67,9 +62,25 @@ class Server(server_pb2_grpc.ServerServicer):
             
         return server_pb2.HeartbeatResponse(acknowledged=True)
     
-    def PingAlive(self, request, context):
-        is_dead = request.server_id not in self.local_alive_servers
-        return server_pb2.AliveResponse(is_dead=is_dead)
+    def ConfirmServerDeath(self, request, context):
+        '''
+            Checks if the current server believes the specified server is alive or dead.
+            This request is only received from the other servers when they believe a server to be dead. 
+            As a result, if the local server believes the specified server to be dead, it can be safely assumed
+            that all other servers also believe it to be dead.
+        '''
+        server_id = request.server_id
+        is_dead = server_id not in self.local_alive_servers
+
+        # If the server is believed to be dead locally, it is also dead globally
+        if is_dead:
+            self.global_alive_servers.discard(server_id)
+            
+            # Elect new leader if necessary
+            if server_id == self.current_leader:
+                self._elect_new_leader(server_id)
+
+        return server_pb2.StatusResponse(is_dead=is_dead)
     
     def _handle_server_death(self, server_id):
         '''
@@ -80,53 +91,43 @@ class Server(server_pb2_grpc.ServerServicer):
         if server_id not in self.local_alive_servers:
             return  # Already handled
 
+        # Locally, treat server as dead
         self.local_alive_servers.remove(server_id)
+        self.server_stubs.pop(server_id, None)
 
-        MAX_RETRIES = 3
-        RETRY_DELAY = 1.5  # seconds
+        # Check with all other servers to see if they agree that this server is dead
+        agreement = []
+        for peer_id, stub in self.server_stubs.items():
+            # Skip yourself and dead servers
+            if peer_id == server_id or peer_id not in self.local_alive_servers:
+                continue
 
-        for attempt in range(MAX_RETRIES):
-            agreement = []
-            responders = 0
+            try:
+                response = stub.CheckStatus(server_pb2.StatusRequest(server_id=server_id))
+                agreement.append(response.is_dead)
+            except Exception as e:
+                print(f"[Consensus] Could not reach server {peer_id}: {e}")
 
-            for peer_id, stub in self.server_stubs.items():
-                if peer_id == server_id or peer_id in self.dead_servers:
-                    continue
-                try:
-                    response = stub.PingAlive(server_pb2.AliveQuery(server_id=server_id))
-                    responders += 1
-                    agreement.append(response.is_dead)
-                except Exception as e:
-                    print(f"[Consensus] Could not reach server {peer_id}: {e}")
+        # Check if all reachable peers agree on the server's death
+        num_responders = len(agreement)
+        if num_responders == 0 or all(agreement):
+            print(f"[Consensus] All reachable peers agree server {server_id} is dead.")
+            self.global_alive_servers.discard(server_id)
+            
+            # Elect new leader if necessary
+            if server_id == self.current_leader:
+                self._elect_new_leader(server_id)
 
-            if responders == 0:
-                print(f"[Consensus] No peers left to confirm death of server {server_id}. Assuming it's dead.")
-                self.global_alive_servers.discard(server_id)
-                self.dead_servers.add(server_id)
-                break
 
-            elif all(agreement):
-                print(f"[Consensus] All reachable peers agree server {server_id} is dead.")
-                self.global_alive_servers.discard(server_id)
-                self.dead_servers.add(server_id)
-                break
-
-            # Peers not ready yet, wait and try again
-            time.sleep(RETRY_DELAY)
+    def _elect_new_leader(self, server_id):
+        print(f"[Leader Election] Leader {server_id} has died. Electing new leader...")
+        new_leader = min(self.global_alive_servers)
+        self.current_leader = new_leader
+        self.is_leader = (self.id == new_leader)
+        if self.is_leader:
+            print(f"[Leader Election] I am the new leader (Server {self.id})")
         else:
-            # If we exhaust retries without reaching consensus
-            print(f"[Consensus] Could not reach agreement on server {server_id}'s death after {MAX_RETRIES} retries.")
-            return
-
-        if server_id == self.current_leader:
-            print(f"[Leader Election] Leader {server_id} has died. Electing new leader...")
-            new_leader = min(self.global_alive_servers)
-            self.current_leader = new_leader
-            self.is_leader = (self.id == new_leader)
-            if self.is_leader:
-                print(f"[Leader Election] I am the new leader (Server {self.id})")
-            else:
-                print(f"[Leader Election] New leader is Server {new_leader}")
+            print(f"[Leader Election] New leader is Server {new_leader}")
     
     def begin_heartbeats(self, server_id):
         '''
@@ -137,7 +138,7 @@ class Server(server_pb2_grpc.ServerServicer):
                 print(f"[Heartbeat] Server {server_id} is not connected.")
                 return
             
-            if server_id in self.dead_servers:
+            if server_id not in self.local_alive_servers:
                 print(f"[Heartbeat] Server {server_id} is considered DEAD. Declining to set up heartbeat messages to the server.")
                 return
             
@@ -166,6 +167,14 @@ class Server(server_pb2_grpc.ServerServicer):
 
             time.sleep(self.heartbeat_interval)
 
+    def CurrentLeader(self, request, context):
+        '''
+            Returns the current leader of the server cluster
+        '''
+        print(f"Received request to identify current leader from {self.id}")
+        response = server_pb2.CurrentLeaderResponse(leader=self.current_leader)
+        return response
+    
     def Signup(self, request, context):
         username = request.username
         password = request.password
