@@ -103,7 +103,7 @@ class Server(server_pb2_grpc.ServerServicer):
                 continue
 
             try:
-                response = stub.CheckStatus(server_pb2.StatusRequest(server_id=server_id))
+                response = stub.ConfirmServerDeath(server_pb2.StatusRequest(server_id=server_id))
                 agreement.append(response.is_dead)
             except Exception as e:
                 print(f"[Consensus] Could not reach server {peer_id}: {e}")

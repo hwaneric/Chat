@@ -3,6 +3,9 @@ import time
 import grpc
 import sys
 from server import Server
+from dotenv import load_dotenv
+
+load_dotenv(dotenv_path='../.env')
 sys.path.append('../protos')
 import server_pb2 
 import server_pb2_grpc
@@ -11,10 +14,7 @@ import client_listener_pb2_grpc
 from account_management import check_if_online, create_account, fetch_sent_messages, list_accounts, login, logout, logout_all_users, read_messages, send_offline_message, delete_account, delete_message
 import threading
 import os
-from dotenv import load_dotenv
 
-# Load environment variables from .env file
-load_dotenv()
 
 def serve(server_object):
     '''
@@ -48,6 +48,8 @@ def connect(server_object):
         host = os.getenv(f"SERVER_HOST_{peer_id}")
         port = int(os.getenv(f"SERVER_PORT_{peer_id}"))
 
+        print(f"Connecting to server {peer_id} at {host}:{port}")
+
         MAX_RETRIES = 20
         retry_delay = 2  # seconds
 
@@ -64,12 +66,15 @@ def connect(server_object):
                 threading.Thread(target=server_object.begin_heartbeats, args=(peer_id,), daemon=True).start()
                 server_object.last_heartbeat_received[peer_id] = time.time()
                 break
+            
 
-            except grpc.FutureTimeoutError:
+            except grpc.FutureTimeoutError as e:
+                print(e)
+                print("helloooooo")
                 # Connection Attempt Timed Out
                 if attempt == MAX_RETRIES - 1:
                     print(f"Failed to connect to server {peer_id} after {MAX_RETRIES} attempts.")
-                    break
+                    raise ConnectionError(f"Unable to connect to server {peer_id} after {MAX_RETRIES} attempts.")
 
                 time.sleep(retry_delay)
 
