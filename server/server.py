@@ -1,4 +1,5 @@
 from concurrent import futures
+from debouncer import Debouncer
 import time
 import grpc
 import sys
@@ -45,42 +46,65 @@ class Server(server_pb2_grpc.ServerServicer):
         self.last_heartbeat_received = {}
         self.dead_servers = set()
 
-        threading.Thread(target=self._send_heartbeats, daemon=True).start()
-        threading.Thread(target=self._monitor_heartbeats, daemon=True).start()
 
-    def Heartbeat(self, request, context):
-        self.last_heartbeat_received[request.server_id] = time.time()
+    def Heartbeat(self, request_iterator, context):
+        debouncer = Debouncer(
+            lambda: self._handle_server_death(server_id),
+            self.heartbeat_timeout
+        )
+
+        for request in request_iterator:
+            server_id = request.server_id
+            timestamp = request.timestamp
+            print(f"[Monitor] Received heartbeat from server {server_id} at time {timestamp}")
+
+            # Reset the last heartbeat received time for this server
+            debouncer()
+            
         return server_pb2.HeartbeatResponse(acknowledged=True)
     
-    def _send_heartbeats(self):
-        while True:
-            for server_id, stub in self.server_stubs.items():
-                if server_id in self.dead_servers:
-                    continue 
-                try:
-                    request = server_pb2.HeartbeatRequest(
-                        server_id=self.id,
-                        timestamp=int(time.time())
-                    )
-                    stub.Heartbeat(request)
-                except Exception as e:
-                    if e.code() == grpc.StatusCode.UNAVAILABLE:
-                        print(f"[Heartbeat] Server {server_id} is unreachable.")
-                    else:
-                        print(f"[Heartbeat] Failed to send to {server_id}: {e}")
-            time.sleep(self.heartbeat_interval)
+    def _handle_server_death(self, server_id):
+        '''
+            Handles the death of a server 
+        '''
+        print(f"[Monitor] Server {server_id} is DEAD at time", time.time())
+    
+    def begin_heartbeats(self, server_id):
+        '''
+            Begins sending heartbeats to specified server
+        '''
+        try:
+            if server_id not in self.server_stubs:
+                print(f"[Heartbeat] Server {server_id} is not connected.")
+                return
+            
+            if server_id in self.dead_servers:
+                print(f"[Heartbeat] Server {server_id} is considered DEAD. Declining to set up heartbeat messages to the server.")
+                return
+            
+            print(f"[Heartbeat] Beginning to send heartbeats to server {server_id} at time", time.time())
+            stub = self.server_stubs[server_id]
 
-    def _monitor_heartbeats(self):
-        time.sleep(5)
+            # Begin sending stream of heartbeat messages to the server
+            stub.Heartbeat(self._generate_heartbeat_requests())
+        except grpc.RpcError as e:
+            if e.code() == grpc.StatusCode.UNAVAILABLE:
+                print(f"This is the standard error raised when a server dies and the gRPC connection is lost. We will ignore this error here to stay more authentic to the nature of the assignment (since we assume that we are supposed to be able to handle the silent failure of a server)")
+                return
+            
+            print(f"[Heartbeat] Error sending heartbeat to server {server_id}: {e}")
+        
+    def _generate_heartbeat_requests(self):
+        '''
+            Generates a stream of heartbeat requests to be sent to other servers
+        '''
         while True:
-            now = time.time()
-            for server_id in self.server_stubs:
-                if server_id in self.dead_servers:
-                    continue 
-                last = self.last_heartbeat_received.get(server_id, 0)
-                if now - last > self.heartbeat_timeout:
-                    print(f"[Monitor] Server {server_id} is considered DEAD (last seen {now - last:.1f}s ago)")
-                    self.dead_servers.add(server_id)
+            heartbeat_request = server_pb2.HeartbeatRequest(
+                server_id=self.id,
+                timestamp=int(time.time())
+            )
+            yield heartbeat_request
+
             time.sleep(self.heartbeat_interval)
 
     def Signup(self, request, context):

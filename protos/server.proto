@@ -13,7 +13,7 @@ service Server {
     rpc DeleteAccount(DeleteAccountRequest) returns (StandardServerResponse);
     rpc DeleteMessage(DeleteMessageRequest) returns (StandardServerResponse);
     rpc FetchSentMessages(FetchSentMessagesRequest) returns (FetchSentMessagesResponse);
-    rpc Heartbeat(HeartbeatRequest) returns (HeartbeatResponse);
+    rpc Heartbeat(stream HeartbeatRequest) returns (HeartbeatResponse);
 }
 
 message StandardServerResponse {

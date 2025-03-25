@@ -42,12 +42,12 @@ def connect(server_object):
     print("Attempting to Connect to other servers")
 
     # Create a channel to connect to other servers
-    for i in range(3):
-        if i == server_object.id:
+    for peer_id in range(3):
+        if peer_id == server_object.id:
             continue
 
-        host = os.getenv(f"SERVER_HOST_{i}")
-        port = int(os.getenv(f"SERVER_PORT_{i}"))
+        host = os.getenv(f"SERVER_HOST_{peer_id}")
+        port = int(os.getenv(f"SERVER_PORT_{peer_id}"))
 
         MAX_RETRIES = 20
         retry_delay = 2  # seconds
@@ -59,18 +59,22 @@ def connect(server_object):
                 grpc.channel_ready_future(channel).result(timeout=retry_delay)
                 # channel = grpc.insecure_channel(f"{host}:{port}")
                 stub = server_pb2_grpc.ServerStub(channel)
-                server_object.server_stubs[i] = stub
-                server_object.last_heartbeat_received[i] = time.time()
+                server_object.server_stubs[peer_id] = stub
+
+                # Begin sending heartbeats to the connected server
+                threading.Thread(target=server_object.begin_heartbeats, args=(peer_id,), daemon=True).start()
+                server_object.last_heartbeat_received[peer_id] = time.time()
+                break
 
             except grpc.FutureTimeoutError:
                 # Connection Attempt Timed Out
                 if attempt == MAX_RETRIES - 1:
-                    print(f"Failed to connect to server {i} after {MAX_RETRIES} attempts.")
+                    print(f"Failed to connect to server {peer_id} after {MAX_RETRIES} attempts.")
                     break
 
                 time.sleep(retry_delay)
 
-        print(f"Connected to server {i}")
+        print(f"Connected to server {peer_id}")
     
     print("Connected to all servers")          
 

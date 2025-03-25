@@ -84,7 +84,7 @@ class ServerStub(object):
                 request_serializer=server__pb2.FetchSentMessagesRequest.SerializeToString,
                 response_deserializer=server__pb2.FetchSentMessagesResponse.FromString,
                 _registered_method=True)
-        self.Heartbeat = channel.unary_unary(
+        self.Heartbeat = channel.stream_unary(
                 '/server.Server/Heartbeat',
                 request_serializer=server__pb2.HeartbeatRequest.SerializeToString,
                 response_deserializer=server__pb2.HeartbeatResponse.FromString,
@@ -154,7 +154,7 @@ class ServerServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
-    def Heartbeat(self, request, context):
+    def Heartbeat(self, request_iterator, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -213,7 +213,7 @@ def add_ServerServicer_to_server(servicer, server):
                     request_deserializer=server__pb2.FetchSentMessagesRequest.FromString,
                     response_serializer=server__pb2.FetchSentMessagesResponse.SerializeToString,
             ),
-            'Heartbeat': grpc.unary_unary_rpc_method_handler(
+            'Heartbeat': grpc.stream_unary_rpc_method_handler(
                     servicer.Heartbeat,
                     request_deserializer=server__pb2.HeartbeatRequest.FromString,
                     response_serializer=server__pb2.HeartbeatResponse.SerializeToString,
@@ -500,7 +500,7 @@ class Server(object):
             _registered_method=True)
 
     @staticmethod
-    def Heartbeat(request,
+    def Heartbeat(request_iterator,
             target,
             options=(),
             channel_credentials=None,
@@ -510,8 +510,8 @@ class Server(object):
             wait_for_ready=None,
             timeout=None,
             metadata=None):
-        return grpc.experimental.unary_unary(
-            request,
+        return grpc.experimental.stream_unary(
+            request_iterator,
             target,
             '/server.Server/Heartbeat',
             server__pb2.HeartbeatRequest.SerializeToString,
