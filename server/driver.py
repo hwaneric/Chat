@@ -94,8 +94,6 @@ def initialize(id, db_path):
     server_object.cleanup()
 
 
-
-
 if __name__ == '__main__':
     # serve()
     if len(sys.argv) < 2:
