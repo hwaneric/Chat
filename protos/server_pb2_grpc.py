@@ -89,6 +89,16 @@ class ServerStub(object):
                 request_serializer=server__pb2.HeartbeatRequest.SerializeToString,
                 response_deserializer=server__pb2.HeartbeatResponse.FromString,
                 _registered_method=True)
+        self.CurrentLeader = channel.unary_unary(
+                '/server.Server/CurrentLeader',
+                request_serializer=server__pb2.CurrentLeaderRequest.SerializeToString,
+                response_deserializer=server__pb2.CurrentLeaderResponse.FromString,
+                _registered_method=True)
+        self.ConfirmServerDeath = channel.unary_unary(
+                '/server.Server/ConfirmServerDeath',
+                request_serializer=server__pb2.StatusRequest.SerializeToString,
+                response_deserializer=server__pb2.StatusResponse.FromString,
+                _registered_method=True)
 
 
 class ServerServicer(object):
@@ -160,6 +170,18 @@ class ServerServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def CurrentLeader(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def ConfirmServerDeath(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
 
 def add_ServerServicer_to_server(servicer, server):
     rpc_method_handlers = {
@@ -217,6 +239,16 @@ def add_ServerServicer_to_server(servicer, server):
                     servicer.Heartbeat,
                     request_deserializer=server__pb2.HeartbeatRequest.FromString,
                     response_serializer=server__pb2.HeartbeatResponse.SerializeToString,
+            ),
+            'CurrentLeader': grpc.unary_unary_rpc_method_handler(
+                    servicer.CurrentLeader,
+                    request_deserializer=server__pb2.CurrentLeaderRequest.FromString,
+                    response_serializer=server__pb2.CurrentLeaderResponse.SerializeToString,
+            ),
+            'ConfirmServerDeath': grpc.unary_unary_rpc_method_handler(
+                    servicer.ConfirmServerDeath,
+                    request_deserializer=server__pb2.StatusRequest.FromString,
+                    response_serializer=server__pb2.StatusResponse.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -516,6 +548,60 @@ class Server(object):
             '/server.Server/Heartbeat',
             server__pb2.HeartbeatRequest.SerializeToString,
             server__pb2.HeartbeatResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def CurrentLeader(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/server.Server/CurrentLeader',
+            server__pb2.CurrentLeaderRequest.SerializeToString,
+            server__pb2.CurrentLeaderResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def ConfirmServerDeath(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/server.Server/ConfirmServerDeath',
+            server__pb2.StatusRequest.SerializeToString,
+            server__pb2.StatusResponse.FromString,
             options,
             channel_credentials,
             insecure,

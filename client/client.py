@@ -1,4 +1,5 @@
 from collections import defaultdict
+import functools
 import datetime
 import time
 from dotenv import load_dotenv
@@ -6,6 +7,7 @@ import readline # Need to import readline to allow inputs to accept string with 
 import sys
 import grpc
 from concurrent import futures
+from decorators import retry_on_failure
 from client_listener import Client_Listener
 sys.path.append('../protos')
 import server_pb2
@@ -13,18 +15,38 @@ import server_pb2_grpc
 import client_listener_pb2
 import client_listener_pb2_grpc
 
+from dotenv import load_dotenv
+import os
+
+load_dotenv()
+
 class Client:
     def __init__(self, server_host, server_port, client_host, username=None):
         self.server_host = server_host
         self.server_port = server_port
         self.client_host = client_host
-        
-        self.channel = grpc.insecure_channel(f"{server_host}:{server_port}")
-        # bind the client and the server
-        self.stub = server_pb2_grpc.ServerStub(self.channel)
 
         self.username = username
+
+        self.channels = {}
+        self.stubs = {}
+
+        for server_id in range(3):
+            host = os.getenv(f"SERVER_HOST_{server_id}")
+            port = int(os.getenv(f"SERVER_PORT_{server_id}"))
+
+            channel = grpc.insecure_channel(f"{host}:{port}")
+            stub = server_pb2_grpc.ServerStub(channel)
+
+            print(host, port)
+            self.channels[server_id] = channel
+            self.stubs[server_id] = stub
+
+        # Ask servers 0 and 1 who the current leader is
+        self.leader = None
+        self._update_leader()
     
+    @retry_on_failure()
     def signup(self, username, password):
         ''' 
             Attempts to create a new account with the given username and password. 
@@ -37,13 +59,14 @@ class Client:
         }
 
         request = server_pb2.UserAuthRequest(**request)
-        res = self.stub.Signup(request)
+        res = self.stubs[self.leader].Signup(request)
 
         if res.success:
             self.username = username
 
         return res.success, res.message
     
+    @retry_on_failure()
     def login(self, username, password):
         '''
             Attempts to login with the given username and password.
@@ -56,7 +79,7 @@ class Client:
         }
 
         request = server_pb2.UserAuthRequest(**request)
-        response = self.stub.Login(request)
+        response = self.stubs[self.leader].Login(request)
 
         if response.HasField("success"):
             res = response.success
@@ -66,6 +89,7 @@ class Client:
             res = response.failure
             return res.success, res.message, -1
    
+    @retry_on_failure()
     def list(self, username_pattern):
         '''
             Lists all usernames that match the given regex username pattern.
@@ -75,7 +99,7 @@ class Client:
             "username_pattern": username_pattern
         }
         request = server_pb2.ListUsernamesRequest(**request)
-        response = self.stub.ListUsernames(request)
+        response = self.stubs[self.leader].ListUsernames(request)
 
         if response.HasField("success"):
             res = response.success
@@ -84,6 +108,7 @@ class Client:
             res = response.failure
             return res.success, res.message
 
+    @retry_on_failure()
     def message(self, target_username, message):
         '''
             Sends a message to the target username.
@@ -97,9 +122,10 @@ class Client:
             "from_client": True,
         }
         request = server_pb2.SendMessageRequest(**request)
-        res = self.stub.SendMessage(request)
+        res = self.stubs[self.leader].SendMessage(request)
         return res.success, res.message
     
+    @retry_on_failure()
     def logout(self):
         '''
             Logs out the current user.
@@ -110,7 +136,7 @@ class Client:
             "from_client": True,
         }
         request = server_pb2.UserLogoutRequest(**request)
-        res = self.stub.Logout(request)
+        res = self.stubs[self.leader].Logout(request)
 
         if res.success:
             self.username = None
@@ -118,6 +144,7 @@ class Client:
         else:
             return res.success, res.message
     
+    @retry_on_failure()
     def read(self, num_messages):
         '''
             Reads the last num_messages messages from the user's inbox.
@@ -129,7 +156,7 @@ class Client:
             "from_client": True,
         }
         request = server_pb2.ReadMessagesRequest(**request)
-        response = self.stub.ReadMessages(request)
+        response = self.stubs[self.leader].ReadMessages(request)
 
         if response.HasField("success"):
 
@@ -145,7 +172,7 @@ class Client:
             res = response.failure
             return res.success, res.message
         
-
+    @retry_on_failure()
     def delete_account(self):
         '''
             Deletes the current user's account.
@@ -157,14 +184,15 @@ class Client:
         }
 
         request = server_pb2.DeleteAccountRequest(**request)
-        res = self.stub.DeleteAccount(request)
+        res = self.stubs[self.leader].DeleteAccount(request)
 
         if res.success:
             self.username = None
             return res.success, res.message
         else:
             return res.success, res.message
-        
+
+    @retry_on_failure()   
     def fetch_sent_messages(self):
         '''
             Fetches all messages that the current user has sent that have not 
@@ -175,7 +203,7 @@ class Client:
             "username": self.username
         }
         request = server_pb2.FetchSentMessagesRequest(**request)
-        response = self.stub.FetchSentMessages(request)
+        response = self.stubs[self.leader].FetchSentMessages(request)
         
         if response.HasField("success"):
             res = response.success
@@ -193,7 +221,7 @@ class Client:
             res = response.failure
             return res.success, res.message
 
-    
+    @retry_on_failure()
     def delete_message(self, message_id): 
         '''
             Deletes the message with the given message_id.
@@ -207,10 +235,37 @@ class Client:
             "from_client": True,
         }
         request = server_pb2.DeleteMessageRequest(**request)
-        res = self.stub.DeleteMessage(request)
+        res = self.stubs[self.leader].DeleteMessage(request)
         return res.success, res.message
 
+    def _update_leader(self):
+        # Ask servers 0 and 1 who the current leader is
+        leader = None
+
+        for server_id in range(3):
+            try:
+                stub = self.stubs[server_id]
+                request = server_pb2.CurrentLeaderRequest()
+                response = stub.CurrentLeader(request)
+                
+                if not leader:
+                    leader = response.leader
+                elif response.leader != leader:
+                    print(f"Server {server_id} has a different leader than server {self.leader}.")
+                    raise Exception("Inconsistent leader information from servers.")
+                    
+
+            except grpc.RpcError as e:
+                print(f"Error connecting to server {server_id}, server {server_id} is likely dead")
     
+        if leader is None:
+            print("Could not determine the current leader. Panicking.")
+            raise Exception("Could not determine the current leader")
+        
+        self.leader = leader
+        print(f"Current leader is server {self.leader}")
+
+    @retry_on_failure() 
     def _register_listening_server(self, port):
         '''
             Registers the client's listener with the server so the server knows
@@ -224,7 +279,7 @@ class Client:
             "from_client": True,
         }
         register_listener_request = server_pb2.RegisterClientRequest(**request)
-        res = self.stub.RegisterClient(register_listener_request)
+        res = self.stubs[self.leader].RegisterClient(register_listener_request)
         print(res)
         return
 
