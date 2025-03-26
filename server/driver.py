@@ -59,13 +59,12 @@ def connect(server_object):
 
                 # Wait for the channel to be ready
                 grpc.channel_ready_future(channel).result(timeout=retry_delay)
-                
+
                 stub = server_pb2_grpc.ServerStub(channel)
                 server_object.server_stubs[peer_id] = stub
 
                 # Begin sending heartbeats to the connected server
                 threading.Thread(target=server_object.begin_heartbeats, args=(peer_id,), daemon=True).start()
-                server_object.last_heartbeat_received[peer_id] = time.time()
                 break
             
 
