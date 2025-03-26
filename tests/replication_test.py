@@ -7,13 +7,11 @@ import grpc
 import threading
 import tempfile
 from concurrent import futures
-
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../server')))
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../client')))
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../server')))
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../protos')))
-
 from client import Client
-from server import Server
+from server.server import Server
 from driver import serve, connect
 import server_pb2
 import server_pb2_grpc
