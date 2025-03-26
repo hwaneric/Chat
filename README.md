@@ -1,3 +1,6 @@
+# Note
+This branch is for the replication design project. For the replication design assignment, please reference this branch, NOT main.
+
 # Chat
 A distributed system for connecting multiple chat clients via a server
 
