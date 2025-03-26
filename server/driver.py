@@ -2,7 +2,11 @@ from concurrent import futures
 import time
 import grpc
 import sys
-from server import Server
+# for pytest to properly import quirks
+try:
+    from server.server import Server
+except ModuleNotFoundError:
+    from server import Server
 from dotenv import load_dotenv
 sys.path.append('../protos')
 import server_pb2 
