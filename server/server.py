@@ -72,7 +72,7 @@ class Server(server_pb2_grpc.ServerServicer):
         # If the server is believed to be dead locally, it is also dead globally
         if is_dead:
             self.global_alive_servers.discard(server_id)
-            
+            print(f"[Consensus] All reachable peers agree server {server_id} is dead. In ConfirmServerDeath...")
             # Elect new leader if necessary
             if server_id == self.current_leader:
                 self._elect_new_leader(server_id)
@@ -111,7 +111,7 @@ class Server(server_pb2_grpc.ServerServicer):
                     response = stub.ConfirmServerDeath(server_pb2.StatusRequest(server_id=server_id))
                     agreement.append(response.is_dead)
                 except Exception as e:
-                    print(f"[Consensus] Could not reach server {peer_id}: {e}")
+                    print(f"[Consensus] Could not reach server {peer_id} to confirm death of server {server_id}. This is not necessarily unexpected behavior.")
             
             # Received response from peers, break out of loop
             if agreement:
@@ -119,16 +119,13 @@ class Server(server_pb2_grpc.ServerServicer):
             
             # No response from any peers, retry with delay to check for temporary communication errors
             time.sleep(RETRY_DELAY)
-
-        num_responders = len(agreement)
-
         # Check if all reachable peers agree on the server's death
-        if num_responders == 0 or all(agreement):
+        if all(agreement):
             print(f"[Consensus] All reachable peers agree server {server_id} is dead.")
             self.global_alive_servers.discard(server_id)
             
             # Elect new leader if all servers agree that leader is dead or if there are no other servers left
-            if server_id == self.current_leader or num_responders == 0:
+            if server_id == self.current_leader:
                 self._elect_new_leader(server_id)
 
         

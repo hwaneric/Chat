@@ -32,6 +32,7 @@ def serve(server_object):
     except KeyboardInterrupt:
         print("Caught keyboard interrupt, exiting")
         logout_all_users(server_object.db_path)
+        server.stop(0)
 
 def connect(server_object):
     '''
