@@ -2,7 +2,7 @@ import time
 import functools
 import grpc
 
-def retry_on_failure(retries=8):
+def retry_on_failure(retries=12):
     def decorator_retry(func):
         @functools.wraps(func)
         def wrapper_retry(self, *args, **kwargs):
