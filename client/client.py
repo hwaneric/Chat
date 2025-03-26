@@ -28,8 +28,7 @@ class Client:
 
         self.username = username
 
-        self.channels = {}
-        self.stubs = {}
+        self.stubs = {} # Maps server_id to the corresponding stub for that server
 
         for server_id in range(3):
             host = os.getenv(f"SERVER_HOST_{server_id}")
@@ -38,13 +37,10 @@ class Client:
             channel = grpc.insecure_channel(f"{host}:{port}")
             stub = server_pb2_grpc.ServerStub(channel)
 
-            print(host, port)
-            self.channels[server_id] = channel
             self.stubs[server_id] = stub
 
-        # Ask servers 0 and 1 who the current leader is
         self.leader = None
-        self._update_leader()
+        self._update_leader()   # Initializes leader to the current leader server
     
     @retry_on_failure()
     def signup(self, username, password):

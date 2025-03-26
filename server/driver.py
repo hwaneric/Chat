@@ -56,8 +56,10 @@ def connect(server_object):
         for attempt in range(MAX_RETRIES):
             try:
                 channel = grpc.insecure_channel(f"{host}:{port}")
+
+                # Wait for the channel to be ready
                 grpc.channel_ready_future(channel).result(timeout=retry_delay)
-                # channel = grpc.insecure_channel(f"{host}:{port}")
+                
                 stub = server_pb2_grpc.ServerStub(channel)
                 server_object.server_stubs[peer_id] = stub
 

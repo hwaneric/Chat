@@ -35,14 +35,12 @@ class Server(server_pb2_grpc.ServerServicer):
                 print("Database does not exist. Using default instead.")
         else:
             self.db_path = self._get_default_db_pathname(id)
-        print(self.db_path)
 
 
-        self.current_leader = None
+        self.current_leader = None  # id of the current leader of the server cluster
         
         self.heartbeat_interval = 2  
         self.heartbeat_timeout = 6
-        self.last_heartbeat_received = {}
         self.local_alive_servers = set([0, 1, 2])    # Set of servers that this server believes are alive
         self.global_alive_servers = set([0, 1, 2])   # Set of servers that all servers believe are alive
 
@@ -57,8 +55,7 @@ class Server(server_pb2_grpc.ServerServicer):
             timestamp = request.timestamp
             # print(f"[Monitor] Received heartbeat from server {server_id} at time {timestamp}")
 
-            # Reset the last heartbeat received time for this server
-            debouncer()
+            debouncer() # Reset countdown until assumption of server death
             
         return server_pb2.HeartbeatResponse(acknowledged=True)
     
@@ -120,26 +117,17 @@ class Server(server_pb2_grpc.ServerServicer):
             time.sleep(RETRY_DELAY)
 
         num_responders = len(agreement)
-        # Nobody responded after retries, assume all other servers are dead
-        if num_responders == 0:
-            print(f"[Consensus] No reachable peers to confirm server {server_id}'s death. Promoting self to leader")
-            self.global_alive_servers.discard(server_id)
 
-            # Elect new leader
-            self._elect_new_leader(server_id)
-            return
-        
         # Check if all reachable peers agree on the server's death
-        if all(agreement):
+        if num_responders == 0 or all(agreement):
             print(f"[Consensus] All reachable peers agree server {server_id} is dead.")
             self.global_alive_servers.discard(server_id)
             
-            # Elect new leader if necessary
-            if server_id == self.current_leader:
+            # Elect new leader if all servers agree that leader is dead or if there are no other servers left
+            if server_id == self.current_leader or num_responders == 0:
                 self._elect_new_leader(server_id)
 
         
-
     def _elect_new_leader(self, server_id):
         print(f"[Leader Election] Leader {server_id} has died. Electing new leader...")
         new_leader = min(self.global_alive_servers)
