@@ -119,8 +119,8 @@ class Server(server_pb2_grpc.ServerServicer):
             # No response from any peers, retry with delay to check for temporary communication errors
             time.sleep(RETRY_DELAY)
 
-        # Check if all reachable peers agree on the server's death
         num_responders = len(agreement)
+        # Nobody responded after retries, assume all other servers are dead
         if num_responders == 0:
             print(f"[Consensus] No reachable peers to confirm server {server_id}'s death. Promoting self to leader")
             self.global_alive_servers.discard(server_id)
@@ -129,6 +129,7 @@ class Server(server_pb2_grpc.ServerServicer):
             self._elect_new_leader(server_id)
             return
         
+        # Check if all reachable peers agree on the server's death
         if all(agreement):
             print(f"[Consensus] All reachable peers agree server {server_id} is dead.")
             self.global_alive_servers.discard(server_id)

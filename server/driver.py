@@ -68,8 +68,6 @@ def connect(server_object):
             
 
             except grpc.FutureTimeoutError as e:
-                print(e)
-                print("helloooooo")
                 # Connection Attempt Timed Out
                 if attempt == MAX_RETRIES - 1:
                     print(f"Failed to connect to server {peer_id} after {MAX_RETRIES} attempts.")
