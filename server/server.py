@@ -98,10 +98,12 @@ class Server(server_pb2_grpc.ServerServicer):
         agreement = []
         for _ in range(MAXIMUM_RETRIES):
             # Check with all other servers to see if they agree that this server is dead
-            for peer_id, stub in self.server_stubs.items():
+            for peer_id in range(3):
                 # Skip yourself and dead servers
                 if peer_id == server_id or peer_id not in self.local_alive_servers:
                     continue
+
+                stub = self.server_stubs.get(peer_id)
 
                 try:
                     response = stub.ConfirmServerDeath(server_pb2.StatusRequest(server_id=server_id))

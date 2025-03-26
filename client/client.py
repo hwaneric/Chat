@@ -295,7 +295,7 @@ class Client:
         port = server.add_insecure_port(address)
 
         server.start()
-        print(f"Running server on address")
+        print(f"Running server on address {address}")
         print(f"Bound to port: {port}")
 
         # Register the client's listener with the server
